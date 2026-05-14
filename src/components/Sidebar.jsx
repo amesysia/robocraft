@@ -1,48 +1,64 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   return (
-    <aside className="sidebar">
-      <div className="sidebar-logo">
-        <span className="logo-icon">⚡</span>
-        <span>RoboCraft</span>
+    <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+      <div className="sidebar-header">
+        <div className="sidebar-logo">
+          <span className="logo-icon">⚡</span>
+          <span className="logo-text">RoboCraft</span>
+        </div>
+        <button 
+          className="sidebar-toggle-btn" 
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          title={isCollapsed ? "Menüyü Genişlet" : "Menüyü Daralt"}
+        >
+          {isCollapsed ? '»' : '«'}
+        </button>
       </div>
 
       <nav className="nav-menu">
         <div
           className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
           onClick={() => setActiveTab('dashboard')}
+          title="Gösterge Paneli"
         >
-          <span>🏠</span>
-          <span>Gösterge Paneli</span>
+          <span className="nav-icon">🏠</span>
+          <span className="nav-text">Gösterge Paneli</span>
         </div>
         <div
           className={`nav-item ${activeTab === 'courses' ? 'active' : ''}`}
           onClick={() => setActiveTab('courses')}
+          title="Derslerim"
         >
-          <span>📖</span>
-          <span>Derslerim</span>
+          <span className="nav-icon">📖</span>
+          <span className="nav-text">Derslerim</span>
         </div>
         <div
           className={`nav-item ${activeTab === 'live' ? 'active' : ''}`}
           onClick={() => setActiveTab('live')}
+          title="Canlı Yayınlar"
         >
-          <span>💻</span>
-          <span>Canlı Yayınlar</span>
+          <span className="nav-icon">💻</span>
+          <span className="nav-text">Canlı Yayınlar</span>
         </div>
         <div
           className={`nav-item ${activeTab === 'simulator' ? 'active' : ''}`}
           onClick={() => setActiveTab('simulator')}
+          title="Simülatör Alanı"
         >
-          <span>⚙️</span>
-          <span>Simülatör Alanı</span>
+          <span className="nav-icon">⚙️</span>
+          <span className="nav-text">Simülatör Alanı</span>
         </div>
         <div
           className={`nav-item ${activeTab === 'community' ? 'active' : ''}`}
           onClick={() => setActiveTab('community')}
+          title="Topluluk"
         >
-          <span>👥</span>
-          <span>Topluluk</span>
+          <span className="nav-icon">👥</span>
+          <span className="nav-text">Topluluk</span>
         </div>
       </nav>
 

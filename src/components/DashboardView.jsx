@@ -5,7 +5,7 @@ const DashboardView = ({ isDarkMode, toggleTheme }) => {
     <>
       <header className="top-header">
         <div className="greeting-area">
-          <h1>Hoş Geldin, Elif 👋</h1>
+          <h1>Hoş Geldin, Elif!</h1>
           <p>Öğrenmeye ve üretmeye hazır mısın?</p>
         </div>
         <div className="header-actions">
