@@ -1,0 +1,225 @@
+/* ===== MINE CLICKER VIEW ===== */
+.adventure-view {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  height: 100%;
+}
+
+/* ÜST BAR */
+.adventure-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(25, 35, 54, 0.9), rgba(12, 20, 36, 0.95));
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 20px;
+  padding: 1.5rem 2rem;
+  backdrop-filter: blur(12px);
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.ah-title h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.ah-title p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.ah-stats-container {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.energy-badge {
+  display: flex;
+  align-items: center;
+  background: rgba(234, 179, 8, 0.15);
+  border: 1px solid rgba(234, 179, 8, 0.4);
+  padding: 0.8rem 1.2rem;
+  border-radius: 12px;
+  gap: 0.8rem;
+}
+
+.energy-icon {
+  font-size: 2rem;
+  animation: pulse 2s infinite alternate;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(234, 179, 8, 0.5)); }
+  100% { transform: scale(1.1); filter: drop-shadow(0 0 15px rgba(234, 179, 8, 0.8)); }
+}
+
+.energy-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.energy-label {
+  font-size: 0.8rem;
+  color: #fde047;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.energy-count {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 1px 1px 0 #000;
+  z-index: 2;
+}
+
+.energy-bar-container {
+  width: 150px;
+  height: 20px;
+  background-color: #3f3f46;
+  border: 2px solid #18181b;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+  margin-top: 0.3rem;
+}
+
+.energy-bar-fill {
+  height: 100%;
+  background: linear-gradient(to bottom, #10b981, #059669); /* Minecraft XP bar green */
+  transition: width 0.2s ease;
+  border-top: 1px solid #34d399;
+}
+
+.ah-resources {
+  display: flex;
+  gap: 1rem;
+}
+
+.resource-item {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  gap: 0.6rem;
+}
+
+.res-icon { font-size: 1.3rem; }
+.res-count { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); }
+.res-name { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; }
+
+/* MADEN ALANI (GRID) */
+.mine-grid-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  padding-bottom: 2rem;
+}
+
+.mine-grid-header {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  max-width: 600px;
+}
+
+.refresh-grid-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  transition: transform 0.1s;
+}
+
+.refresh-grid-btn:hover {
+  transform: translateY(-2px);
+  background: #2563eb;
+}
+
+.mine-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  background: #1f2937;
+  padding: 8px;
+  border-radius: 8px;
+  border: 4px solid #111827;
+  position: relative;
+}
+
+.grid-tile {
+  width: 50px;
+  height: 50px;
+  background-color: #4b5563;
+  border: 3px outset #6b7280; /* Bevel effect for unrevealed tiles */
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><text y="20" font-size="20">⛏️</text></svg>'), crosshair;
+  position: relative;
+  transition: transform 0.05s;
+  image-rendering: pixelated;
+}
+
+.grid-tile:hover {
+  filter: brightness(1.2);
+}
+
+.grid-tile:active {
+  border-style: inset;
+}
+
+.grid-tile.revealed {
+  border: 1px solid #111827;
+  cursor: default;
+  background-color: #374151; /* Darker background for dug out area */
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5);
+}
+
+.grid-tile.revealed::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.grid-tile.revealed.coal::after { content: '⬛'; }
+.grid-tile.revealed.copper::after { content: '🟠'; }
+.grid-tile.revealed.gold::after { content: '🟡'; }
+.grid-tile.revealed.stone::after { content: ''; }
+
+/* Yüzen Yazılar (+1 GOLD) */
+.floating-text {
+  position: absolute;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  pointer-events: none;
+  animation: floatUp 1s ease-out forwards;
+  z-index: 10;
+}
+
+@keyframes floatUp {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+  50% { transform: translate(-50%, -100%) scale(1.2); opacity: 1; }
+  100% { transform: translate(-50%, -150%) scale(1); opacity: 0; }
+}

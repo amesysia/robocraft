@@ -1,6 +1,9 @@
 import React from 'react';
+import AvatarDisplay from './AvatarDisplay';
+import { AVATARS } from '../data/avatarData';
 
-const DashboardView = ({ isDarkMode, toggleTheme }) => {
+const DashboardView = ({ isDarkMode, toggleTheme, playerData, setActiveTab }) => {
+  const currentAvatar = AVATARS.find(a => a.id === playerData?.avatarId) || AVATARS[0];
   return (
     <>
       <header className="top-header">
@@ -20,7 +23,20 @@ const DashboardView = ({ isDarkMode, toggleTheme }) => {
             <span>🔔</span>
             <div className="notification-dot"></div>
           </div>
-          <div className="user-avatar-placeholder"></div>
+          <div 
+            className="user-avatar-placeholder" 
+            style={{ padding: 0, overflow: 'hidden', cursor: 'pointer', border: '2px solid var(--accent-cyan)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => setActiveTab('showcase')}
+            title="Vitrinine Git!"
+          >
+            <div style={{ transform: 'scale(0.35)', transformOrigin: 'center center' }}>
+              <AvatarDisplay
+                avatar={currentAvatar}
+                customSkin={playerData?.customSkin}
+                equippedItems={playerData?.equippedItems}
+              />
+            </div>
+          </div>
         </div>
       </header>
 
