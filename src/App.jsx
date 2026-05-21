@@ -11,11 +11,13 @@ import ShowcaseView from './components/ShowcaseView';
 import VideoPlayerView from './components/VideoPlayerView';
 import { Zap } from 'lucide-react';
 import { loadUserData, saveUserData, isFirebaseConfigured } from './firebase';
+import LoginView from './components/LoginView';
+import IceBreakerView from './components/IceBreakerView';
 
 // Başlangıç oyuncu verisi
 const INITIAL_PLAYER_DATA = {
-  xp: 1250,
-  level: 5,
+  xp: 0,
+  level: 0,
   avatarId: 'steve',
   inventory: [],       // sahip olunan eşya id'leri
   equippedItems: {},   // { head: 'iron_helmet', body: null, hand: null, feet: null }
@@ -48,26 +50,53 @@ const INITIAL_PLAYER_DATA = {
 };
 
 const App = () => {
+  const [currentUser, setCurrentUser] = useState(() => sessionStorage.getItem('currentUser'));
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [playerData, setPlayerData] = useState(INITIAL_PLAYER_DATA);
   const [energyToast, setEnergyToast] = useState(null);
   const [activeVideoWeek, setActiveVideoWeek] = useState('week1');
-  const [loadingData, setLoadingData] = useState(true);
+  const [loadingData, setLoadingData] = useState(!!sessionStorage.getItem('currentUser'));
   const [syncStatus, setSyncStatus] = useState(isFirebaseConfigured ? 'synced' : 'local');
 
-  // Firebase'den veri yükleme (Initial Load)
+  // Firebase'den veri yükleme (Oturum açıldığında veya değiştiğinde)
   useEffect(() => {
+    if (!currentUser) {
+      setLoadingData(false);
+      return;
+    }
+
     const initData = async () => {
+      setLoadingData(true);
       try {
-        const userId = 'default_user';
-        const data = await loadUserData(userId);
+        const data = await loadUserData(currentUser);
         if (data) {
+          // Görevleri en son INITIAL_PLAYER_DATA listesiyle senkronize et (yeni görevler eklenmişse)
+          if (data.tasks) {
+            const initialIds = INITIAL_PLAYER_DATA.tasks.map(t => t.id);
+            let cleanedTasks = data.tasks.filter(t => initialIds.includes(t.id));
+            
+            // Eğer week1 kilitliyse ve listemizde ilk haftaysa kilidini aç
+            const week1Index = cleanedTasks.findIndex(t => t.id === 'week1');
+            if (week1Index !== -1 && !cleanedTasks[week1Index].unlocked) {
+              cleanedTasks[week1Index].unlocked = true;
+            }
+
+            const cleanedTaskIds = cleanedTasks.map(t => t.id);
+            const hasMissing = INITIAL_PLAYER_DATA.tasks.some(t => !cleanedTaskIds.includes(t.id));
+            if (hasMissing) {
+              cleanedTasks = INITIAL_PLAYER_DATA.tasks.map(initTask => {
+                const existing = cleanedTasks.find(t => t.id === initTask.id);
+                return existing ? existing : initTask;
+              });
+            }
+            data.tasks = cleanedTasks;
+          }
           setPlayerData(data);
         } else {
           // Eğer Firestore yapılandırılmışsa ve veri yoksa ilk veriyi yazalım
           if (isFirebaseConfigured) {
-            await saveUserData(userId, INITIAL_PLAYER_DATA);
+            await saveUserData(currentUser, INITIAL_PLAYER_DATA);
           }
         }
       } catch (error) {
@@ -78,15 +107,15 @@ const App = () => {
       }
     };
     initData();
-  }, []);
+  }, [currentUser]);
 
   // Değişiklikleri otomatik kaydetme (Auto-save with Debounce)
   useEffect(() => {
-    if (loadingData) return;
+    if (loadingData || !currentUser) return;
 
     if (!isFirebaseConfigured) {
       // Bulut bağlantısı yoksa sadece localStorage'a yedek alalım
-      saveUserData('default_user', playerData).catch(() => {});
+      saveUserData(currentUser, playerData).catch(() => {});
       setSyncStatus('local');
       return;
     }
@@ -94,7 +123,7 @@ const App = () => {
     setSyncStatus('saving');
     const timer = setTimeout(async () => {
       try {
-        await saveUserData('default_user', playerData);
+        await saveUserData(currentUser, playerData);
         setSyncStatus('synced');
       } catch (error) {
         console.error("Firestore kaydetme hatası:", error);
@@ -103,7 +132,7 @@ const App = () => {
     }, 1500); // 1.5 saniye debounce gecikmesi
 
     return () => clearTimeout(timer);
-  }, [playerData, loadingData]);
+  }, [playerData, loadingData, currentUser]);
 
   useEffect(() => {
     document.body.classList.toggle('light-mode', !isDarkMode);
@@ -111,14 +140,27 @@ const App = () => {
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
+  const handleLoginSuccess = (userId, data) => {
+    sessionStorage.setItem('currentUser', userId);
+    setPlayerData(data);
+    setCurrentUser(userId);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('currentUser');
+    setCurrentUser(null);
+    setPlayerData(INITIAL_PLAYER_DATA);
+    setActiveTab('dashboard');
+  };
+
   // Görev ilerlemesini güncelleme fonksiyonu
-  const updateTaskProgress = (taskId, progressAmount) => {
+  const updateTaskProgress = (taskId, progressAmount, metadata = {}) => {
     setPlayerData(prev => {
       const newTasks = prev.tasks.map(task => {
         if (task.id === taskId && !task.done) {
           const newProgress = Math.min(task.progress + progressAmount, task.requiredProgress);
           const isDone = newProgress >= task.requiredProgress;
-          return { ...task, progress: newProgress, done: isDone, newlyDone: isDone };
+          return { ...task, progress: newProgress, done: isDone, newlyDone: isDone, ...metadata };
         }
         return task;
       });
@@ -133,7 +175,7 @@ const App = () => {
       if (completedTaskIndex !== -1) {
         const completedTask = newTasks[completedTaskIndex];
         newXP += completedTask.xp;
-        newLevel = Math.floor(newXP / 500) + 1;
+        newLevel = Math.floor(newXP / 500);
         newEnergy += 50; 
         completedTask.newlyDone = false;
         
@@ -247,6 +289,7 @@ const App = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard': return <DashboardView isDarkMode={isDarkMode} toggleTheme={toggleTheme} playerData={playerData} updateShowcasePosition={updateShowcasePosition} setActiveTab={setActiveTab} />;
+      case 'icebreaker': return <IceBreakerView setActiveTab={setActiveTab} playerData={playerData} currentUser={currentUser} />;
       case 'live': return <LiveClassroomView />;
       case 'courses': return (
         <div style={{position: 'relative', width: '100%', height: '100%'}}>
@@ -279,13 +322,21 @@ const App = () => {
         />
       );
       case 'adventure': return <AdventureMap tasks={playerData.tasks} playerData={playerData} collectResource={collectResource} useEnergy={useEnergy} unlockGolem={unlockGolem} />;
-      case 'simulator': return <PlaceholderView title="Simülatör Alanı" />;
       case 'community': return <CommunityView isDarkMode={isDarkMode} toggleTheme={toggleTheme} />;
       case 'profile': return <ProfileView playerData={playerData} setPlayerData={setPlayerData} setActiveTab={setActiveTab} buyGolemItem={buyGolemItem} handleGolemEquip={handleGolemEquip} />;
       case 'showcase': return <ShowcaseView playerData={playerData} />;
       default: return <DashboardView isDarkMode={isDarkMode} toggleTheme={toggleTheme} playerData={playerData} updateShowcasePosition={updateShowcasePosition} setActiveTab={setActiveTab} />;
     }
   };
+
+  if (!currentUser) {
+    return (
+      <LoginView
+        onLoginSuccess={handleLoginSuccess}
+        INITIAL_PLAYER_DATA={INITIAL_PLAYER_DATA}
+      />
+    );
+  }
 
   if (loadingData) {
     return (
@@ -311,6 +362,7 @@ const App = () => {
         setActiveTab={setActiveTab}
         playerData={playerData}
         syncStatus={syncStatus}
+        onLogout={handleLogout}
       />
 
       {/* MAIN CONTENT */}

@@ -11,7 +11,7 @@ export const AVATARS = [
     eyeColor: '#3d85c8',
     shirtColor: '#3d85c8',
     pantsColor: '#5b3c1a',
-    unlockLevel: 1,
+    unlockLevel: 0,
   },
   {
     id: 'alex',
@@ -23,7 +23,7 @@ export const AVATARS = [
     eyeColor: '#2d5f2d',
     shirtColor: '#3d8b3d',
     pantsColor: '#5b3c1a',
-    unlockLevel: 1,
+    unlockLevel: 0,
   },
   {
     id: 'creeper',

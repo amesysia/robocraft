@@ -14,15 +14,16 @@ import {
   Cloud,
   CloudOff,
   CloudLightning,
-  RefreshCw
+  RefreshCw,
+  LogOut
 } from 'lucide-react';
 
-const Sidebar = ({ activeTab, setActiveTab, playerData, syncStatus }) => {
+const Sidebar = ({ activeTab, setActiveTab, playerData, syncStatus, onLogout }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const xp = playerData?.xp ?? 1250;
-  const level = playerData?.level ?? 5;
-  const xpForNextLevel = level * 500;
+  const xp = playerData?.xp ?? 0;
+  const level = playerData?.level ?? 0;
+  const xpForNextLevel = (level + 1) * 500;
   const xpProgress = ((xp % 500) / 500) * 100;
 
   return (
@@ -74,14 +75,7 @@ const Sidebar = ({ activeTab, setActiveTab, playerData, syncStatus }) => {
           <MonitorPlay className="nav-icon" size={20} />
           <span className="nav-text">Canlı Yayınlar</span>
         </div>
-        <div
-          className={`nav-item ${activeTab === 'simulator' ? 'active' : ''}`}
-          onClick={() => setActiveTab('simulator')}
-          title="Simülatör Alanı"
-        >
-          <Settings className="nav-icon" size={20} />
-          <span className="nav-text">Simülatör Alanı</span>
-        </div>
+
         <div
           className={`nav-item ${activeTab === 'community' ? 'active' : ''}`}
           onClick={() => setActiveTab('community')}
@@ -104,32 +98,44 @@ const Sidebar = ({ activeTab, setActiveTab, playerData, syncStatus }) => {
         </div>
       </nav>
 
-      {/* Cloud Sync Status Widget */}
-      <div className={`sync-widget ${syncStatus || 'local'} ${isCollapsed ? 'collapsed' : ''}`}>
-        {syncStatus === 'synced' && (
-          <>
-            <Cloud className="sync-icon success" size={16} />
-            {!isCollapsed && <span className="sync-text">Bulut Eşitlendi</span>}
-          </>
-        )}
-        {syncStatus === 'saving' && (
-          <>
-            <RefreshCw className="sync-icon spinning" size={16} />
-            {!isCollapsed && <span className="sync-text">Eşitleniyor...</span>}
-          </>
-        )}
-        {syncStatus === 'local' && (
-          <>
-            <CloudOff className="sync-icon local" size={16} />
-            {!isCollapsed && <span className="sync-text">Yerel Mod (Offline)</span>}
-          </>
-        )}
-        {syncStatus === 'error' && (
-          <>
-            <CloudLightning className="sync-icon error animate-pulse" size={16} />
-            {!isCollapsed && <span className="sync-text">Bağlantı Hatası</span>}
-          </>
-        )}
+      {/* Cloud Sync Status Widget & Logout Button */}
+      <div className="sidebar-bottom-controls">
+        <div className={`sync-widget ${syncStatus || 'local'} ${isCollapsed ? 'collapsed' : ''}`}>
+          {syncStatus === 'synced' && (
+            <>
+              <Cloud className="sync-icon success" size={16} />
+              {!isCollapsed && <span className="sync-text">Bulut Eşitlendi</span>}
+            </>
+          )}
+          {syncStatus === 'saving' && (
+            <>
+              <RefreshCw className="sync-icon spinning" size={16} />
+              {!isCollapsed && <span className="sync-text">Eşitleniyor...</span>}
+            </>
+          )}
+          {syncStatus === 'local' && (
+            <>
+              <CloudOff className="sync-icon local" size={16} />
+              {!isCollapsed && <span className="sync-text">Yerel Mod (Offline)</span>}
+            </>
+          )}
+          {syncStatus === 'error' && (
+            <>
+              <CloudLightning className="sync-icon error animate-pulse" size={16} />
+              {!isCollapsed && <span className="sync-text">Bağlantı Hatası</span>}
+            </>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={onLogout}
+          className={`sidebar-logout-btn ${isCollapsed ? 'collapsed' : ''}`}
+          title="Oturumu Kapat"
+        >
+          <LogOut size={16} className="logout-icon" />
+          {!isCollapsed && <span className="logout-text">Çıkış Yap</span>}
+        </button>
       </div>
 
       <div className="level-widget">

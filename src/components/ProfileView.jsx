@@ -45,7 +45,7 @@ const ProfileView = ({ playerData, setPlayerData, setActiveTab, exchangeResource
     setPlayerData(prev => ({ ...prev, avatarId: avatar.id }));
   };
 
-  const xpForNextLevel = playerData.level * 500;
+  const xpForNextLevel = (playerData.level + 1) * 500;
   const xpProgress = ((playerData.xp % 500) / 500) * 100;
   const tasks = playerData.tasks || [];
   const completedTasks = tasks.filter(t => t.done).length;
@@ -150,7 +150,7 @@ const ProfileView = ({ playerData, setPlayerData, setActiveTab, exchangeResource
                 <div style={{ marginBottom: '1rem' }}>
                   <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.3rem' }}>🎯 Günlük Görevler</h3>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    Puan (XP) kazanmak için sana tanımlanan aşağıdaki görevleri tamamla. Görevin üstüne tıklayarak ilgili sekmeye (Derslerim, Simülatör vb.) gidebilirsin.
+                    Puan (XP) kazanmak için sana tanımlanan aşağıdaki görevleri tamamla. Görevin üstüne tıklayarak ilgili sekmeye (Derslerim, Keşif Madeni vb.) gidebilirsin.
                   </p>
                 </div>
                 <div className="tasks-progress-text">

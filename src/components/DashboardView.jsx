@@ -42,6 +42,21 @@ const DashboardView = ({ isDarkMode, toggleTheme, playerData, setActiveTab }) =>
 
       <div className="dashboard-grid">
         <div className="left-column">
+          <div className="card icebreaker-banner-card">
+            <div className="icebreaker-banner-info">
+              <span className="badge badge-icebreaker">ÖZEL ETKİNLİK</span>
+              <h2>Giriş: Buz Kırma Etkinliği</h2>
+              <p>Toplulukla tanışmak için kendi robotunun veya devrenin görselini yükle, diğer öğrencilerin paylaşımlarını keşfet! 📸🤖</p>
+              <button className="btn-primary" onClick={() => setActiveTab('icebreaker')}>
+                <span>🚀</span> Etkinliğe Katıl
+              </button>
+            </div>
+            <div className="icebreaker-preview-area">
+              <div className="neon-grid-pattern"></div>
+              <span>👾</span>
+            </div>
+          </div>
+
           <div className="card active-course-card">
             <div className="course-info">
               <span className="badge">Aktif Kursun</span>
@@ -61,11 +76,11 @@ const DashboardView = ({ isDarkMode, toggleTheme, playerData, setActiveTab }) =>
                 <p>Öğrenme Serisi</p>
               </div>
             </div>
-            <div className="card stat-card">
-              <div className="stat-icon icon-blue">🎖️</div>
+            <div className="card stat-card" onClick={() => setActiveTab('profile')} style={{ cursor: 'pointer' }}>
+              <div className="stat-icon icon-blue">🤖</div>
               <div className="stat-text">
-                <h3>3 Rozet</h3>
-                <p>Kazanılan Başarı</p>
+                <h3>{playerData?.unlockedGolems?.length || 0} Golem</h3>
+                <p>Keşfedilen Golem</p>
               </div>
             </div>
           </div>
