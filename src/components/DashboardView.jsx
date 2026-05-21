@@ -4,11 +4,14 @@ import { AVATARS } from '../data/avatarData';
 
 const DashboardView = ({ isDarkMode, toggleTheme, playerData, setActiveTab }) => {
   const currentAvatar = AVATARS.find(a => a.id === playerData?.avatarId) || AVATARS[0];
+  const firstName = playerData?.displayName
+    ? playerData.displayName.split(' ')[0]
+    : 'Kahraman';
   return (
     <>
       <header className="top-header">
         <div className="greeting-area">
-          <h1>Hoş Geldin, Elif!</h1>
+          <h1>Hoş Geldin, {firstName}!</h1>
           <p>Öğrenmeye ve üretmeye hazır mısın?</p>
         </div>
         <div className="header-actions">

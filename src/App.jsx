@@ -10,7 +10,7 @@ import AdventureMap from './components/AdventureMap';
 import ShowcaseView from './components/ShowcaseView';
 import VideoPlayerView from './components/VideoPlayerView';
 import { Zap } from 'lucide-react';
-import { loadUserData, saveUserData, isFirebaseConfigured } from './firebase';
+import { loadUserData, saveUserData, isFirebaseConfigured, auth, onAuthStateChanged, signOut } from './firebase';
 import LoginView from './components/LoginView';
 import IceBreakerView from './components/IceBreakerView';
 
@@ -18,6 +18,7 @@ import IceBreakerView from './components/IceBreakerView';
 const INITIAL_PLAYER_DATA = {
   xp: 0,
   level: 0,
+  displayName: '',
   avatarId: 'steve',
   inventory: [],       // sahip olunan eşya id'leri
   equippedItems: {},   // { head: 'iron_helmet', body: null, hand: null, feet: null }
@@ -50,64 +51,83 @@ const INITIAL_PLAYER_DATA = {
 };
 
 const App = () => {
-  const [currentUser, setCurrentUser] = useState(() => sessionStorage.getItem('currentUser'));
+  const [currentUser, setCurrentUser] = useState(null); // Firebase Auth user UID
+  const [currentUserObj, setCurrentUserObj] = useState(null); // Full Firebase user object
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [playerData, setPlayerData] = useState(INITIAL_PLAYER_DATA);
   const [energyToast, setEnergyToast] = useState(null);
   const [activeVideoWeek, setActiveVideoWeek] = useState('week1');
-  const [loadingData, setLoadingData] = useState(!!sessionStorage.getItem('currentUser'));
+  const [loadingData, setLoadingData] = useState(true); // Auth state is loading initially
   const [syncStatus, setSyncStatus] = useState(isFirebaseConfigured ? 'synced' : 'local');
 
-  // Firebase'den veri yükleme (Oturum açıldığında veya değiştiğinde)
+  // Firebase Auth state listener — runs once on mount
   useEffect(() => {
-    if (!currentUser) {
+    if (!auth) {
+      // Offline/local mode: no auth
       setLoadingData(false);
       return;
     }
-
-    const initData = async () => {
-      setLoadingData(true);
-      try {
-        const data = await loadUserData(currentUser);
-        if (data) {
-          // Görevleri en son INITIAL_PLAYER_DATA listesiyle senkronize et (yeni görevler eklenmişse)
-          if (data.tasks) {
-            const initialIds = INITIAL_PLAYER_DATA.tasks.map(t => t.id);
-            let cleanedTasks = data.tasks.filter(t => initialIds.includes(t.id));
-            
-            // Eğer week1 kilitliyse ve listemizde ilk haftaysa kilidini aç
-            const week1Index = cleanedTasks.findIndex(t => t.id === 'week1');
-            if (week1Index !== -1 && !cleanedTasks[week1Index].unlocked) {
-              cleanedTasks[week1Index].unlocked = true;
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        setCurrentUser(firebaseUser.uid);
+        setCurrentUserObj(firebaseUser);
+        // Load player data
+        setLoadingData(true);
+        try {
+          const data = await loadUserData(firebaseUser.uid);
+          if (data) {
+            // Sync tasks with latest INITIAL_PLAYER_DATA
+            if (data.tasks) {
+              const initialIds = INITIAL_PLAYER_DATA.tasks.map(t => t.id);
+              let cleanedTasks = data.tasks.filter(t => initialIds.includes(t.id));
+              const week1Index = cleanedTasks.findIndex(t => t.id === 'week1');
+              if (week1Index !== -1 && !cleanedTasks[week1Index].unlocked) {
+                cleanedTasks[week1Index].unlocked = true;
+              }
+              const cleanedTaskIds = cleanedTasks.map(t => t.id);
+              const hasMissing = INITIAL_PLAYER_DATA.tasks.some(t => !cleanedTaskIds.includes(t.id));
+              if (hasMissing) {
+                cleanedTasks = INITIAL_PLAYER_DATA.tasks.map(initTask => {
+                  const existing = cleanedTasks.find(t => t.id === initTask.id);
+                  return existing ? existing : initTask;
+                });
+              }
+              data.tasks = cleanedTasks;
             }
-
-            const cleanedTaskIds = cleanedTasks.map(t => t.id);
-            const hasMissing = INITIAL_PLAYER_DATA.tasks.some(t => !cleanedTaskIds.includes(t.id));
-            if (hasMissing) {
-              cleanedTasks = INITIAL_PLAYER_DATA.tasks.map(initTask => {
-                const existing = cleanedTasks.find(t => t.id === initTask.id);
-                return existing ? existing : initTask;
-              });
+            // Merge displayName from Auth profile if not already stored
+            if (!data.displayName && firebaseUser.displayName) {
+              data.displayName = firebaseUser.displayName;
             }
-            data.tasks = cleanedTasks;
+            setPlayerData(data);
+          } else if (isFirebaseConfigured) {
+            // New user — save initial data
+            const initData = {
+              ...INITIAL_PLAYER_DATA,
+              displayName: firebaseUser.displayName || '',
+            };
+            await saveUserData(firebaseUser.uid, initData);
+            setPlayerData(initData);
           }
-          setPlayerData(data);
-        } else {
-          // Eğer Firestore yapılandırılmışsa ve veri yoksa ilk veriyi yazalım
-          if (isFirebaseConfigured) {
-            await saveUserData(currentUser, INITIAL_PLAYER_DATA);
-          }
+        } catch (error) {
+          console.error('Uygulama yüklenirken Firebase hatası:', error);
+          setSyncStatus('error');
+        } finally {
+          setLoadingData(false);
         }
-      } catch (error) {
-        console.error("Uygulama yüklenirken Firebase hatası:", error);
-        setSyncStatus('error');
-      } finally {
+      } else {
+        // Signed out
+        setCurrentUser(null);
+        setCurrentUserObj(null);
+        setPlayerData(INITIAL_PLAYER_DATA);
         setLoadingData(false);
       }
-    };
-    initData();
-  }, [currentUser]);
+    });
+    return () => unsubscribe();
+  }, []);
+
+
+
 
   // Değişiklikleri otomatik kaydetme (Auto-save with Debounce)
   useEffect(() => {
@@ -140,15 +160,22 @@ const App = () => {
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
-  const handleLoginSuccess = (userId, data) => {
-    sessionStorage.setItem('currentUser', userId);
+  const handleLoginSuccess = (uid, data) => {
+    // Firebase Auth handles session persistence; just update state
     setPlayerData(data);
-    setCurrentUser(userId);
+    setCurrentUser(uid);
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('currentUser');
+  const handleLogout = async () => {
+    if (auth) {
+      try {
+        await signOut(auth);
+      } catch (err) {
+        console.error('Sign-out error:', err);
+      }
+    }
     setCurrentUser(null);
+    setCurrentUserObj(null);
     setPlayerData(INITIAL_PLAYER_DATA);
     setActiveTab('dashboard');
   };

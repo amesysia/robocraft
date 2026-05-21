@@ -1,151 +1,143 @@
 import React, { useState } from 'react';
-import { Zap, User, Lock, Eye, EyeOff, PlusCircle, LogIn, AlertCircle, ArrowRight, Check } from 'lucide-react';
+import { Zap, Mail, Lock, Eye, EyeOff, PlusCircle, LogIn, AlertCircle, ArrowRight, Check, User, KeyRound } from 'lucide-react';
 import { AVATARS } from '../data/avatarData';
-import { loadUserData, saveUserData, hashPassword } from '../firebase';
+import {
+  auth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
+  saveUserData,
+  isAuthConfigured,
+  getAuthErrorMessage,
+} from '../firebase';
 
 const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
-  const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register'
-  const [loginUserId, setLoginUserId] = useState('');
+  const [activeTab, setActiveTab] = useState('login'); // 'login' | 'register' | 'reset'
+
+  // Login fields
+  const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  const [registerUserId, setRegisterUserId] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+
+  // Register fields
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerFullName, setRegisterFullName] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerPasswordConfirm, setRegisterPasswordConfirm] = useState('');
-  
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterPasswordConfirm, setShowRegisterPasswordConfirm] = useState(false);
-  
   const [selectedAvatarId, setSelectedAvatarId] = useState('steve');
+
+  // Password reset fields
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
-  const cleanUserId = (val) => {
-    return val.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setErrorMsg('');
-    
-    const userId = cleanUserId(loginUserId);
-    if (!userId) {
-      setErrorMsg('Lütfen kullanıcı kodunuzu girin.');
-      return;
-    }
-
-    if (!loginPassword) {
-      setErrorMsg('Lütfen şifrenizi girin.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const data = await loadUserData(userId);
-      if (data) {
-        const hashedInputPassword = await hashPassword(loginPassword);
-
-        if (data.passwordHash) {
-          if (data.passwordHash === hashedInputPassword) {
-            onLoginSuccess(userId, data);
-          } else {
-            setErrorMsg('Girdiğiniz şifre hatalı! Lütfen tekrar deneyin.');
-          }
-        } else {
-          // Eski, şifresiz hesap - şifre tanımlatıp devam ettirelim
-          if (loginPassword.length < 4) {
-            setErrorMsg('Bu eski hesap için yeni bir şifre tanımlamanız gerekmektedir. Şifre en az 4 karakter olmalıdır.');
-          } else {
-            const updatedData = {
-              ...data,
-              passwordHash: hashedInputPassword
-            };
-            await saveUserData(userId, updatedData);
-            onLoginSuccess(userId, updatedData);
-          }
-        }
-      } else {
-        setErrorMsg('Bu kullanıcı kodu bulunamadı! Yeni karakter oluşturmak için sağdaki sekmeyi seçin.');
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMsg('Bağlantı hatası oluştu. Lütfen tekrar deneyin.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setErrorMsg('');
-
-    const userId = cleanUserId(registerUserId);
-    if (!userId) {
-      setErrorMsg('Lütfen yeni bir kullanıcı kodu belirleyin.');
-      return;
-    }
-
-    if (userId.length < 3) {
-      setErrorMsg('Kullanıcı kodu en az 3 karakter olmalıdır.');
-      return;
-    }
-
-    if (!registerPassword) {
-      setErrorMsg('Lütfen bir şifre belirleyin.');
-      return;
-    }
-
-    if (registerPassword.length < 4) {
-      setErrorMsg('Şifre en az 4 karakter olmalıdır.');
-      return;
-    }
-
-    if (registerPassword !== registerPasswordConfirm) {
-      setErrorMsg('Şifreler eşleşmiyor! Lütfen kontrol edin.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Önce bu kullanıcı adı alınmış mı diye kontrol et
-      const existingData = await loadUserData(userId);
-      if (existingData) {
-        setErrorMsg('Bu kullanıcı kodu zaten alınmış! Lütfen başka bir kod seçin.');
-        setLoading(false);
-        return;
-      }
-
-      // Şifreyi hash'le
-      const hashedPassword = await hashPassword(registerPassword);
-
-      // Yeni veri oluştur
-      const newPlayerData = {
-        ...INITIAL_PLAYER_DATA,
-        avatarId: selectedAvatarId,
-        passwordHash: hashedPassword
-      };
-
-      // Veritabanına kaydet
-      await saveUserData(userId, newPlayerData);
-      onLoginSuccess(userId, newPlayerData);
-    } catch (err) {
-      console.error(err);
-      setErrorMsg('Hesap oluşturulurken bağlantı hatası oluştu.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const availableAvatars = AVATARS.filter(a => a.unlockLevel <= 0);
 
   const resetFields = () => {
     setErrorMsg('');
+    setSuccessMsg('');
     setLoginPassword('');
     setRegisterPassword('');
     setRegisterPasswordConfirm('');
     setShowLoginPassword(false);
     setShowRegisterPassword(false);
     setShowRegisterPasswordConfirm(false);
+    setResetSent(false);
   };
 
-  const availableAvatars = AVATARS.filter(a => a.unlockLevel <= 0); // Steve ve Alex
+  // ─── Giriş ──────────────────────────────────────────────────────────────────
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+
+    if (!loginEmail.trim()) { setErrorMsg('Lütfen e-posta adresinizi girin.'); return; }
+    if (!loginPassword) { setErrorMsg('Lütfen şifrenizi girin.'); return; }
+
+    setLoading(true);
+    try {
+      if (isAuthConfigured) {
+        const userCred = await signInWithEmailAndPassword(auth, loginEmail.trim(), loginPassword);
+        // onAuthStateChanged in App.jsx will handle the rest; we just need to signal success
+        // Pass null data so App.jsx loads it via onAuthStateChanged
+        onLoginSuccess(userCred.user.uid, null);
+      } else {
+        setErrorMsg('Firebase Authentication yapılandırılmamış. Lütfen yöneticinizle iletişime geçin.');
+      }
+    } catch (err) {
+      setErrorMsg(getAuthErrorMessage(err.code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Kayıt ──────────────────────────────────────────────────────────────────
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+
+    if (!registerEmail.trim()) { setErrorMsg('Lütfen e-posta adresinizi girin.'); return; }
+    if (!registerFullName.trim()) { setErrorMsg('Lütfen adınızı ve soyadınızı girin.'); return; }
+    if (registerFullName.trim().length < 2) { setErrorMsg('Ad soyad en az 2 karakter olmalıdır.'); return; }
+    if (!registerPassword) { setErrorMsg('Lütfen bir şifre belirleyin.'); return; }
+    if (registerPassword.length < 6) { setErrorMsg('Şifre en az 6 karakter olmalıdır.'); return; }
+    if (registerPassword !== registerPasswordConfirm) { setErrorMsg('Şifreler eşleşmiyor! Lütfen kontrol edin.'); return; }
+
+    setLoading(true);
+    try {
+      if (isAuthConfigured) {
+        const userCred = await createUserWithEmailAndPassword(auth, registerEmail.trim(), registerPassword);
+
+        // Set display name in Firebase Auth profile
+        await updateProfile(userCred.user, { displayName: registerFullName.trim() });
+
+        // Save initial player data to Firestore
+        const initData = {
+          ...INITIAL_PLAYER_DATA,
+          displayName: registerFullName.trim(),
+          avatarId: selectedAvatarId,
+        };
+        await saveUserData(userCred.user.uid, initData);
+
+        onLoginSuccess(userCred.user.uid, initData);
+      } else {
+        setErrorMsg('Firebase Authentication yapılandırılmamış. Lütfen yöneticinizle iletişime geçin.');
+      }
+    } catch (err) {
+      setErrorMsg(getAuthErrorMessage(err.code));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Şifremi Unuttum ────────────────────────────────────────────────────────
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    if (!resetEmail.trim()) { setErrorMsg('Lütfen e-posta adresinizi girin.'); return; }
+
+    setLoading(true);
+    try {
+      if (isAuthConfigured) {
+        await sendPasswordResetEmail(auth, resetEmail.trim());
+        setResetSent(true);
+        setSuccessMsg(`Şifre sıfırlama bağlantısı ${resetEmail.trim()} adresine gönderildi. Gelen kutunuzu kontrol edin.`);
+      } else {
+        setErrorMsg('Firebase Authentication yapılandırılmamış.');
+      }
+    } catch (err) {
+      setErrorMsg(getAuthErrorMessage(err.code));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="login-container">
@@ -157,7 +149,7 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
             <Zap className="login-zap-small" size={28} />
           </div>
           <h1 className="login-title">ROBOCRAFT</h1>
-          <p className="login-subtitle">LMS & Adventure Platform</p>
+          <p className="login-subtitle">LMS &amp; Adventure Platform</p>
         </div>
 
         {/* Sekme Seçici */}
@@ -178,6 +170,14 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
             <PlusCircle size={16} />
             Karakter Oluştur
           </button>
+          <button
+            type="button"
+            className={`login-tab-btn ${activeTab === 'reset' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('reset'); resetFields(); }}
+          >
+            <KeyRound size={16} />
+            Şifremi Unuttum
+          </button>
         </div>
 
         {/* Hata Bildirimi */}
@@ -188,25 +188,31 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
           </div>
         )}
 
-        {/* Giriş Yapma Formu */}
-        {activeTab === 'login' ? (
+        {/* Başarı Bildirimi */}
+        {successMsg && (
+          <div className="login-success-alert">
+            <Check size={16} className="flex-shrink-0" />
+            <span>{successMsg}</span>
+          </div>
+        )}
+
+        {/* ── Giriş Formu ─────────────────────────────────────────────────────── */}
+        {activeTab === 'login' && (
           <form className="login-form" onSubmit={handleLogin}>
             <div className="form-group">
-              <label>KULLANICI KODU / ID</label>
+              <label>E-POSTA ADRESİ</label>
               <div className="input-wrapper">
-                <User size={18} className="input-icon" />
+                <Mail size={18} className="input-icon" />
                 <input
-                  type="text"
-                  placeholder="Kodu girin (örn: elif, default_user)"
-                  value={loginUserId}
-                  onChange={(e) => setLoginUserId(e.target.value)}
+                  type="email"
+                  placeholder="ornek@email.com"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
                   disabled={loading}
                   className="cyber-input"
-                  maxLength={20}
-                  autoComplete="username"
+                  autoComplete="email"
                 />
               </div>
-              <span className="input-help">Daha önce oluşturduğunuz kod ile sisteme bağlanın.</span>
             </div>
 
             <div className="form-group">
@@ -214,13 +220,13 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
               <div className="input-wrapper">
                 <Lock size={18} className="input-icon" />
                 <input
-                  type={showLoginPassword ? "text" : "password"}
+                  type={showLoginPassword ? 'text' : 'password'}
                   placeholder="Şifrenizi girin"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
                   disabled={loading}
                   className="cyber-input password-input"
-                  maxLength={30}
+                  maxLength={60}
                   autoComplete="current-password"
                 />
                 <button
@@ -228,7 +234,7 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
                   className="password-toggle-btn"
                   onClick={() => setShowLoginPassword(!showLoginPassword)}
                   disabled={loading}
-                  title={showLoginPassword ? "Şifreyi Gizle" : "Şifreyi Göster"}
+                  title={showLoginPassword ? 'Şifreyi Gizle' : 'Şifreyi Göster'}
                 >
                   {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -236,34 +242,54 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
             </div>
 
             <button type="submit" className="btn-cyber btn-login-submit" disabled={loading}>
-              {loading ? (
-                <div className="spinner-small"></div>
-              ) : (
-                <>
-                  Sanal Ağa Bağlan <ArrowRight size={18} />
-                </>
-              )}
+              {loading ? <div className="spinner-small"></div> : <>Sanal Ağa Bağlan <ArrowRight size={18} /></>}
+            </button>
+
+            <button
+              type="button"
+              className="login-forgot-link"
+              onClick={() => { setActiveTab('reset'); resetFields(); }}
+            >
+              Şifremi unuttum
             </button>
           </form>
-        ) : (
-          /* Yeni Karakter Oluşturma Formu */
+        )}
+
+        {/* ── Kayıt Formu ─────────────────────────────────────────────────────── */}
+        {activeTab === 'register' && (
           <form className="login-form" onSubmit={handleRegister}>
             <div className="form-group">
-              <label>YENİ KULLANICI KODU / ID</label>
+              <label>E-POSTA ADRESİ</label>
+              <div className="input-wrapper">
+                <Mail size={18} className="input-icon" />
+                <input
+                  type="email"
+                  placeholder="ornek@email.com"
+                  value={registerEmail}
+                  onChange={(e) => setRegisterEmail(e.target.value)}
+                  disabled={loading}
+                  className="cyber-input"
+                  autoComplete="email"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>TAM ADINIZ</label>
               <div className="input-wrapper">
                 <User size={18} className="input-icon" />
                 <input
                   type="text"
-                  placeholder="Benzersiz bir kod girin (örn: ahmet)"
-                  value={registerUserId}
-                  onChange={(e) => setRegisterUserId(e.target.value)}
+                  placeholder="Adınız Soyadınız"
+                  value={registerFullName}
+                  onChange={(e) => setRegisterFullName(e.target.value)}
                   disabled={loading}
                   className="cyber-input"
-                  maxLength={15}
-                  autoComplete="username"
+                  maxLength={50}
+                  autoComplete="name"
                 />
               </div>
-              <span className="input-help">Boşluksuz, küçük harf ve rakamlardan oluşabilir.</span>
+              <span className="input-help">Profil ve skor tablosunda görünecek adınız.</span>
             </div>
 
             <div className="form-group">
@@ -271,13 +297,13 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
               <div className="input-wrapper">
                 <Lock size={18} className="input-icon" />
                 <input
-                  type={showRegisterPassword ? "text" : "password"}
-                  placeholder="En az 4 karakter şifre belirleyin"
+                  type={showRegisterPassword ? 'text' : 'password'}
+                  placeholder="En az 6 karakter"
                   value={registerPassword}
                   onChange={(e) => setRegisterPassword(e.target.value)}
                   disabled={loading}
                   className="cyber-input password-input"
-                  maxLength={30}
+                  maxLength={60}
                   autoComplete="new-password"
                 />
                 <button
@@ -285,7 +311,7 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
                   className="password-toggle-btn"
                   onClick={() => setShowRegisterPassword(!showRegisterPassword)}
                   disabled={loading}
-                  title={showRegisterPassword ? "Şifreyi Gizle" : "Şifreyi Göster"}
+                  title={showRegisterPassword ? 'Şifreyi Gizle' : 'Şifreyi Göster'}
                 >
                   {showRegisterPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -297,13 +323,13 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
               <div className="input-wrapper">
                 <Lock size={18} className="input-icon" />
                 <input
-                  type={showRegisterPasswordConfirm ? "text" : "password"}
+                  type={showRegisterPasswordConfirm ? 'text' : 'password'}
                   placeholder="Şifreyi tekrar girin"
                   value={registerPasswordConfirm}
                   onChange={(e) => setRegisterPasswordConfirm(e.target.value)}
                   disabled={loading}
                   className="cyber-input password-input"
-                  maxLength={30}
+                  maxLength={60}
                   autoComplete="new-password"
                 />
                 <button
@@ -311,7 +337,7 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
                   className="password-toggle-btn"
                   onClick={() => setShowRegisterPasswordConfirm(!showRegisterPasswordConfirm)}
                   disabled={loading}
-                  title={showRegisterPasswordConfirm ? "Şifreyi Gizle" : "Şifreyi Göster"}
+                  title={showRegisterPasswordConfirm ? 'Şifreyi Gizle' : 'Şifreyi Göster'}
                 >
                   {showRegisterPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -341,14 +367,55 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
             </div>
 
             <button type="submit" className="btn-cyber btn-register-submit" disabled={loading}>
-              {loading ? (
-                <div className="spinner-small"></div>
-              ) : (
-                <>
-                  Karakteri Oluştur & Başlat <ArrowRight size={18} />
-                </>
-              )}
+              {loading ? <div className="spinner-small"></div> : <>Karakteri Oluştur &amp; Başlat <ArrowRight size={18} /></>}
             </button>
+          </form>
+        )}
+
+        {/* ── Şifremi Unuttum ─────────────────────────────────────────────────── */}
+        {activeTab === 'reset' && (
+          <form className="login-form" onSubmit={handlePasswordReset}>
+            {!resetSent ? (
+              <>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+                  Kayıtlı e-posta adresinizi girin. Şifre sıfırlama bağlantısı göndereceğiz.
+                </p>
+                <div className="form-group">
+                  <label>E-POSTA ADRESİ</label>
+                  <div className="input-wrapper">
+                    <Mail size={18} className="input-icon" />
+                    <input
+                      type="email"
+                      placeholder="ornek@email.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      disabled={loading}
+                      className="cyber-input"
+                      autoComplete="email"
+                    />
+                  </div>
+                </div>
+                <button type="submit" className="btn-cyber btn-login-submit" disabled={loading}>
+                  {loading ? <div className="spinner-small"></div> : <>Sıfırlama Linki Gönder <ArrowRight size={18} /></>}
+                </button>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📧</div>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Şifre sıfırlama bağlantısı <strong>{resetEmail}</strong> adresine gönderildi.
+                  <br />Gelen kutunuzu kontrol edin (spam klasörünü de).
+                </p>
+                <button
+                  type="button"
+                  className="btn-cyber btn-login-submit"
+                  style={{ marginTop: '1.5rem' }}
+                  onClick={() => { setActiveTab('login'); resetFields(); }}
+                >
+                  Giriş Sayfasına Dön
+                </button>
+              </div>
+            )}
           </form>
         )}
       </div>
@@ -357,3 +424,6 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
 };
 
 export default LoginView;
+
+
+

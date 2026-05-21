@@ -1,6 +1,15 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  sendPasswordResetEmail,
+} from "firebase/auth";
 
 // Firebase configuration using environment variables or your real credentials
 const firebaseConfig = {
@@ -19,16 +28,18 @@ const isConfigured = !Object.values(firebaseConfig).some(isPlaceholder);
 
 let db = null;
 let app = null;
+let auth = null;
 let analytics = null;
 
 if (isConfigured) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     db = getFirestore(app);
+    auth = getAuth(app);
     if (typeof window !== "undefined") {
       analytics = getAnalytics(app);
     }
-    console.log("⚡ [Firebase] Firebase, Firestore ve Analytics başarıyla başlatıldı.");
+    console.log("⚡ [Firebase] Firebase, Firestore, Auth ve Analytics başarıyla başlatıldı.");
   } catch (error) {
     console.warn("⚠️ [Firebase] Firebase başlatılırken hata oluştu, Yerel Mod aktif:", error);
   }
@@ -37,8 +48,38 @@ if (isConfigured) {
 }
 
 
-export { db };
+export { db, auth };
 export const isFirebaseConfigured = isConfigured && db !== null;
+export const isAuthConfigured = isConfigured && auth !== null;
+
+// Re-export Firebase Auth functions
+export {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  sendPasswordResetEmail,
+};
+
+/**
+ * Firebase Auth hata kodlarını Türkçe mesajlara çevirir.
+ */
+export const getAuthErrorMessage = (code) => {
+  const messages = {
+    "auth/email-already-in-use": "Bu e-posta adresi zaten kullanımda. Giriş yapmayı deneyin.",
+    "auth/invalid-email": "Geçersiz e-posta adresi. Lütfen kontrol edin.",
+    "auth/weak-password": "Şifre çok zayıf. En az 6 karakter kullanın.",
+    "auth/user-not-found": "Bu e-posta ile kayıtlı bir hesap bulunamadı.",
+    "auth/wrong-password": "Hatalı şifre. Lütfen tekrar deneyin.",
+    "auth/invalid-credential": "E-posta veya şifre hatalı. Lütfen kontrol edin.",
+    "auth/too-many-requests": "Çok fazla başarısız deneme. Lütfen bir süre bekleyin.",
+    "auth/network-request-failed": "Bağlantı hatası. İnternet bağlantınızı kontrol edin.",
+    "auth/operation-not-allowed": "Bu giriş yöntemi etkin değil. Yöneticinize başvurun.",
+    "auth/requires-recent-login": "Bu işlem için yeniden giriş yapmanız gerekiyor.",
+  };
+  return messages[code] || "Bir hata oluştu. Lütfen tekrar deneyin.";
+};
 
 /**
  * Firestore veya localStorage'dan kullanıcı verisini yükler.
@@ -97,16 +138,4 @@ export const saveUserData = async (userId, data) => {
   return false; // Yerel modda kaydedildi
 };
 
-/**
- * Verilen düz metin şifreyi tarayıcı yerleşik SubtleCrypto API'si ile SHA-256 olarak özetler.
- * @param {string} password Düz metin şifre
- * @returns {Promise<string>} SHA-256 heksadesimal hash
- */
-export const hashPassword = async (password) => {
-  if (!password) return "";
-  const msgBuffer = new TextEncoder().encode(password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-};
 
