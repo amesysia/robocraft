@@ -28,6 +28,7 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterPasswordConfirm, setShowRegisterPasswordConfirm] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState('steve');
+  const [registerRole, setRegisterRole] = useState('student');
 
   // Password reset fields
   const [resetEmail, setResetEmail] = useState('');
@@ -101,6 +102,7 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
           ...INITIAL_PLAYER_DATA,
           displayName: registerFullName.trim(),
           avatarId: selectedAvatarId,
+          role: registerRole,
         };
         await saveUserData(userCred.user.uid, initData);
 
@@ -255,9 +257,26 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
           </form>
         )}
 
-        {/* ── Kayıt Formu ─────────────────────────────────────────────────────── */}
         {activeTab === 'register' && (
           <form className="login-form" onSubmit={handleRegister}>
+            
+            <div className="form-group" style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem' }}>
+              <button 
+                type="button" 
+                onClick={() => setRegisterRole('student')}
+                style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', background: registerRole === 'student' ? 'var(--accent-cyan)' : 'var(--bg-card)', color: registerRole === 'student' ? '#000' : 'var(--text-primary)', border: '1px solid var(--border-color)', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                Öğrenci
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setRegisterRole('teacher')}
+                style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', background: registerRole === 'teacher' ? 'var(--accent-red)' : 'var(--bg-card)', color: registerRole === 'teacher' ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-color)', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s' }}
+              >
+                Öğretmen
+              </button>
+            </div>
+
             <div className="form-group">
               <label>E-POSTA ADRESİ</label>
               <div className="input-wrapper">
@@ -344,27 +363,29 @@ const LoginView = ({ onLoginSuccess, INITIAL_PLAYER_DATA }) => {
               </div>
             </div>
 
-            <div className="form-group">
-              <label>BAŞLANGIÇ KARAKTERİ</label>
-              <div className="avatar-selector">
-                {availableAvatars.map((avatar) => {
-                  const isSelected = selectedAvatarId === avatar.id;
-                  return (
-                    <div
-                      key={avatar.id}
-                      className={`avatar-option-card ${isSelected ? 'selected' : ''}`}
-                      onClick={() => !loading && setSelectedAvatarId(avatar.id)}
-                    >
-                      <div className="avatar-option-emoji">{avatar.emoji}</div>
-                      <div className="avatar-option-info">
-                        <span className="avatar-option-name">{avatar.name}</span>
-                        {isSelected && <Check size={14} className="avatar-option-check" />}
+            {registerRole === 'student' && (
+              <div className="form-group">
+                <label>BAŞLANGIÇ KARAKTERİ</label>
+                <div className="avatar-selector">
+                  {availableAvatars.map((avatar) => {
+                    const isSelected = selectedAvatarId === avatar.id;
+                    return (
+                      <div
+                        key={avatar.id}
+                        className={`avatar-option-card ${isSelected ? 'selected' : ''}`}
+                        onClick={() => !loading && setSelectedAvatarId(avatar.id)}
+                      >
+                        <div className="avatar-option-emoji">{avatar.emoji}</div>
+                        <div className="avatar-option-info">
+                          <span className="avatar-option-name">{avatar.name}</span>
+                          {isSelected && <Check size={14} className="avatar-option-check" />}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             <button type="submit" className="btn-cyber btn-register-submit" disabled={loading}>
               {loading ? <div className="spinner-small"></div> : <>Karakteri Oluştur &amp; Başlat <ArrowRight size={18} /></>}

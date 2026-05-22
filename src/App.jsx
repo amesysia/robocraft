@@ -13,6 +13,11 @@ import { Zap } from 'lucide-react';
 import { loadUserData, saveUserData, isFirebaseConfigured, auth, onAuthStateChanged, signOut } from './firebase';
 import LoginView from './components/LoginView';
 import IceBreakerView from './components/IceBreakerView';
+import TeacherSidebar from './components/TeacherSidebar';
+import TeacherStudentsView from './components/TeacherStudentsView';
+import TeacherTasksView from './components/TeacherTasksView';
+import TeacherLiveClassView from './components/TeacherLiveClassView';
+import ProjectsView from './components/ProjectsView';
 
 // Başlangıç oyuncu verisi
 const INITIAL_PLAYER_DATA = {
@@ -100,6 +105,11 @@ const App = () => {
               data.displayName = firebaseUser.displayName;
             }
             setPlayerData(data);
+            if (data.role === 'teacher') {
+              setActiveTab('teacher-students');
+            } else {
+              setActiveTab('dashboard');
+            }
           } else if (isFirebaseConfigured) {
             // New user — save initial data
             const initData = {
@@ -164,6 +174,11 @@ const App = () => {
     // Firebase Auth handles session persistence; just update state
     setPlayerData(data);
     setCurrentUser(uid);
+    if (data && data.role === 'teacher') {
+      setActiveTab('teacher-students');
+    } else {
+      setActiveTab('dashboard');
+    }
   };
 
   const handleLogout = async () => {
@@ -314,6 +329,16 @@ const App = () => {
   };
 
   const renderContent = () => {
+    if (playerData?.role === 'teacher') {
+      switch (activeTab) {
+        case 'teacher-students': return <TeacherStudentsView />;
+        case 'teacher-tasks': return <TeacherTasksView playerData={playerData} />;
+        case 'teacher-live': return <TeacherLiveClassView />;
+        case 'projects': return <ProjectsView playerData={playerData} />;
+        default: return <TeacherStudentsView />;
+      }
+    }
+
     switch (activeTab) {
       case 'dashboard': return <DashboardView isDarkMode={isDarkMode} toggleTheme={toggleTheme} playerData={playerData} updateShowcasePosition={updateShowcasePosition} setActiveTab={setActiveTab} />;
       case 'icebreaker': return <IceBreakerView setActiveTab={setActiveTab} playerData={playerData} currentUser={currentUser} />;
@@ -350,6 +375,7 @@ const App = () => {
       );
       case 'adventure': return <AdventureMap tasks={playerData.tasks} playerData={playerData} collectResource={collectResource} useEnergy={useEnergy} unlockGolem={unlockGolem} />;
       case 'community': return <CommunityView isDarkMode={isDarkMode} toggleTheme={toggleTheme} />;
+      case 'projects': return <ProjectsView playerData={playerData} />;
       case 'profile': return <ProfileView playerData={playerData} setPlayerData={setPlayerData} setActiveTab={setActiveTab} buyGolemItem={buyGolemItem} handleGolemEquip={handleGolemEquip} />;
       case 'showcase': return <ShowcaseView playerData={playerData} />;
       default: return <DashboardView isDarkMode={isDarkMode} toggleTheme={toggleTheme} playerData={playerData} updateShowcasePosition={updateShowcasePosition} setActiveTab={setActiveTab} />;
@@ -384,13 +410,23 @@ const App = () => {
 
   return (
     <div className="app-container">
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        playerData={playerData}
-        syncStatus={syncStatus}
-        onLogout={handleLogout}
-      />
+      {playerData?.role === 'teacher' ? (
+        <TeacherSidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          playerData={playerData}
+          syncStatus={syncStatus}
+          onLogout={handleLogout}
+        />
+      ) : (
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          playerData={playerData}
+          syncStatus={syncStatus}
+          onLogout={handleLogout}
+        />
+      )}
 
       {/* MAIN CONTENT */}
       <main className="main-content" style={{ padding: activeTab === 'live' ? '1.5rem' : activeTab === 'video-player' ? '0' : '2.5rem 3rem' }}>

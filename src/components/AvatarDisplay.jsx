@@ -30,7 +30,7 @@ const getAvatarGrid = (avatar) => {
   );
 };
 
-const AvatarDisplay = ({ avatar, customSkin, equippedItems, onSelectAvatar, availableAvatars, playerLevel }) => {
+const AvatarDisplay = ({ avatar, customSkin, equippedItems, onSelectAvatar, availableAvatars, playerLevel, profileMode = false, hideInventory = false }) => {
   if (!avatar) return null;
 
   const skinGrid = customSkin || getAvatarGrid(avatar);
@@ -69,6 +69,31 @@ const AvatarDisplay = ({ avatar, customSkin, equippedItems, onSelectAvatar, avai
       })
     );
   };
+
+  // Profil fotoğrafı modu: Sadece yüz kısmını gösterecek şekilde ölçeklenmiş SVG döndürür
+  if (profileMode) {
+    return (
+      <svg
+        viewBox="2.5 -1.5 11 11" // Sadece başın etrafını odakla
+        width="100%"
+        height="100%"
+        style={{ imageRendering: 'pixelated', display: 'block', borderRadius: '50%' }}
+      >
+        <g>
+          {/* Skin Katmanı */}
+          {skinGrid.map((row, y) =>
+            row.map((color, x) => {
+              if (!color) return null;
+              return <rect key={`skin-${x}-${y}`} x={x} y={y} width="1" height="1" fill={color} />;
+            })
+          )}
+        </g>
+        <g>
+          {renderItemVisual(headItem, 4, 0)}
+        </g>
+      </svg>
+    );
+  }
 
   return (
     <div className="avatar-section">
@@ -138,8 +163,9 @@ const AvatarDisplay = ({ avatar, customSkin, equippedItems, onSelectAvatar, avai
       </div>
 
       {/* Giyili eşya bilgileri */}
-      <div className="equipped-slots">
-        <div className="equipped-slot-title">🎽 Giyilen Eşyalar</div>
+      {!hideInventory && (
+        <div className="equipped-slots">
+          <div className="equipped-slot-title">🎽 Giyilen Eşyalar</div>
         <div className="equipped-slots-grid">
           {[
             { slot: 'head', label: '⛑️ Kask', item: headItem },
@@ -164,7 +190,8 @@ const AvatarDisplay = ({ avatar, customSkin, equippedItems, onSelectAvatar, avai
             </div>
           ))}
         </div>
-      </div>
+        </div>
+      )}
 
       {/* === AVATAR SEÇİM ALANI === */}
       {availableAvatars && (

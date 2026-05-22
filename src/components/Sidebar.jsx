@@ -15,7 +15,8 @@ import {
   CloudOff,
   CloudLightning,
   RefreshCw,
-  LogOut
+  LogOut,
+  Image as ImageIcon
 } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, playerData, syncStatus, onLogout }) => {
@@ -50,6 +51,22 @@ const Sidebar = ({ activeTab, setActiveTab, playerData, syncStatus, onLogout }) 
         >
           <Home className="nav-icon" size={20} />
           <span className="nav-text">Gösterge Paneli</span>
+        </div>
+        <div
+          className={`nav-item ${activeTab === 'showcase' ? 'active' : ''}`}
+          onClick={() => setActiveTab('showcase')}
+          title="Vitrinim"
+        >
+          <MonitorPlay className="nav-icon" size={20} />
+          <span className="nav-text">Vitrinim</span>
+        </div>
+        <div
+          className={`nav-item ${activeTab === 'projects' ? 'active' : ''}`}
+          onClick={() => setActiveTab('projects')}
+          title="Proje Sergisi"
+        >
+          <ImageIcon className="nav-icon" size={20} />
+          <span className="nav-text">Proje Sergisi</span>
         </div>
         <div
           className={`nav-item ${activeTab === 'courses' ? 'active' : ''}`}

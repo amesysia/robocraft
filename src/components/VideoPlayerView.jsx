@@ -1,6 +1,7 @@
-import React from 'react';
-import { ArrowLeft, PlayCircle, Lock, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, PlayCircle, Lock, CheckCircle2, Play, Check } from 'lucide-react';
 import { WEEK_VIDEOS } from '../data/videoData';
+import { DEFAULT_QUIZ } from '../data/quizData';
 
 const VideoPlayerView = ({ 
   tasks, 
@@ -22,6 +23,62 @@ const VideoPlayerView = ({
   const handleWeekSelect = (weekId, isUnlocked) => {
     if (!isUnlocked) return;
     setActiveVideoWeek(weekId);
+    setShowQuiz(false);
+    setQuizCompleted(false);
+    setQuizPassed(false);
+    setCurrentQuestionIndex(0);
+    setScore(0);
+  };
+
+  // Sınav Durumları (State)
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [quizPassed, setQuizPassed] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(null);
+
+  const startVideo = () => {
+    if (currentWeekInfo.progress < 50) {
+      updateTaskProgress(currentWeekInfo.id, 50);
+    }
+  };
+
+  const handleOptionSelect = (index) => {
+    setSelectedOption(index);
+  };
+
+  const handleNextQuestion = () => {
+    if (selectedOption === DEFAULT_QUIZ[currentQuestionIndex].answer) {
+      setScore(score + 1);
+    }
+    
+    if (currentQuestionIndex + 1 < DEFAULT_QUIZ.length) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setSelectedOption(null);
+    } else {
+      // Sınav Bitti
+      const finalScore = selectedOption === DEFAULT_QUIZ[currentQuestionIndex].answer ? score + 1 : score;
+      setScore(finalScore);
+      setQuizCompleted(true);
+      
+      if (finalScore >= 8) {
+        setQuizPassed(true);
+        if (currentWeekInfo.progress < 100) {
+          updateTaskProgress(currentWeekInfo.id, 50); // %50 videodan gelmişti, kalan %50 testten
+        }
+      } else {
+        setQuizPassed(false);
+      }
+    }
+  };
+
+  const resetQuiz = () => {
+    setCurrentQuestionIndex(0);
+    setScore(0);
+    setQuizCompleted(false);
+    setQuizPassed(false);
+    setSelectedOption(null);
   };
 
   return (
@@ -177,48 +234,162 @@ const VideoPlayerView = ({
           }}>
             {activeVideo.title}
           </h1>
-          <button 
-            onClick={() => {
-              if (currentWeekInfo.progress < 50) {
-                updateTaskProgress(currentWeekInfo.id, 50);
-              }
-            }}
-            style={{
+          {/* Test/Durum Butonu */}
+          {currentWeekInfo.progress >= 100 ? (
+            <div style={{
               fontSize: '0.85rem',
               padding: '0.5rem 1rem',
-              backgroundColor: currentWeekInfo.progress >= 50 ? 'rgba(16, 185, 129, 0.15)' : 'var(--accent-cyan)',
-              border: currentWeekInfo.progress >= 50 ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--accent-cyan)',
+              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
               borderRadius: '20px',
-              color: currentWeekInfo.progress >= 50 ? '#10b981' : '#000',
+              color: '#10b981',
               fontWeight: '700',
-              cursor: currentWeekInfo.progress >= 50 ? 'default' : 'pointer',
-              borderStyle: 'solid',
-              outline: 'none',
-              transition: 'all 0.2s ease',
-              boxShadow: currentWeekInfo.progress >= 50 ? 'none' : '0 4px 12px rgba(0, 240, 255, 0.2)'
-            }}
-            disabled={currentWeekInfo.progress >= 50}
-          >
-            {currentWeekInfo.progress >= 50 ? '✓ Görev Tamamlandı' : '⚡ Görevi Tamamla'}
-          </button>
+              cursor: 'default',
+            }}>
+              ✓ Görev Tamamlandı
+            </div>
+          ) : currentWeekInfo.progress >= 50 ? (
+            <button 
+              onClick={() => setShowQuiz(true)}
+              style={{
+                fontSize: '0.85rem',
+                padding: '0.5rem 1rem',
+                backgroundColor: 'var(--accent-yellow)',
+                border: '1px solid var(--accent-yellow)',
+                borderRadius: '20px',
+                color: '#000',
+                fontWeight: '700',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 4px 12px rgba(250, 204, 21, 0.3)'
+              }}
+            >
+              📝 Değerlendirme Testine Başla
+            </button>
+          ) : (
+            <div style={{
+              fontSize: '0.85rem',
+              padding: '0.5rem 1rem',
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '20px',
+              color: 'var(--text-secondary)',
+            }}>
+              Önce Videoyu İzle
+            </div>
+          )}
         </div>
 
-        {/* Video Konteyneri */}
-        <div style={{
-          width: '100%',
-          maxWidth: '1000px',
-          aspectRatio: '16/9',
-          borderRadius: '16px',
-          overflow: 'hidden',
-          boxShadow: '0 20px 50px rgba(0, 240, 255, 0.08), 0 0 0 1px rgba(0, 240, 255, 0.15)',
-          backgroundColor: '#000',
-          position: 'relative'
-        }}>
-          <div 
-            style={{ width: '100%', height: '100%' }}
-            dangerouslySetInnerHTML={{ __html: activeVideo.embedCode }}
-          />
-        </div>
+        {/* QUIZ VEYA VIDEO ALANI */}
+        {showQuiz && currentWeekInfo.progress < 100 && !quizPassed ? (
+          <div style={{
+            width: '100%',
+            maxWidth: '1000px',
+            backgroundColor: 'var(--bg-card)',
+            borderRadius: '16px',
+            padding: '3rem',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+            border: '1px solid var(--border-color)',
+            position: 'relative'
+          }}>
+            {!quizCompleted ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', color: 'var(--text-secondary)' }}>
+                  <span>Soru {currentQuestionIndex + 1} / {DEFAULT_QUIZ.length}</span>
+                  <span>Geçme Notu: 8/10</span>
+                </div>
+                <h2 style={{ fontSize: '1.4rem', marginBottom: '2rem', color: 'var(--text-primary)' }}>
+                  {DEFAULT_QUIZ[currentQuestionIndex].question}
+                </h2>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {DEFAULT_QUIZ[currentQuestionIndex].options.map((opt, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleOptionSelect(idx)}
+                      style={{
+                        padding: '1rem 1.5rem',
+                        backgroundColor: selectedOption === idx ? 'rgba(0, 240, 255, 0.1)' : 'var(--bg-dark)',
+                        border: `1px solid ${selectedOption === idx ? 'var(--accent-cyan)' : 'var(--border-color)'}`,
+                        borderRadius: '12px',
+                        color: selectedOption === idx ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                        textAlign: 'left',
+                        fontSize: '1rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={handleNextQuestion}
+                  disabled={selectedOption === null}
+                  className="btn-cyber"
+                  style={{ marginTop: '2rem', width: '100%', opacity: selectedOption === null ? 0.5 : 1 }}
+                >
+                  {currentQuestionIndex + 1 === DEFAULT_QUIZ.length ? 'Testi Bitir' : 'Sonraki Soru'}
+                </button>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '2rem' }}>
+                <h2 style={{ fontSize: '2rem', marginBottom: '1rem', color: quizPassed ? 'var(--accent-cyan)' : 'var(--accent-red)' }}>
+                  {quizPassed ? 'Tebrikler, Geçtiniz! 🎉' : 'Başarısız Oldunuz 😢'}
+                </h2>
+                <p style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>
+                  Puanınız: <strong>{score} / {DEFAULT_QUIZ.length}</strong>
+                </p>
+                {!quizPassed && (
+                  <button onClick={resetQuiz} className="btn-cyber" style={{ background: 'var(--accent-red)' }}>
+                    Tekrar Dene
+                  </button>
+                )}
+              </div>
+            )}
+            <button onClick={() => setShowQuiz(false)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>Kapat</button>
+          </div>
+        ) : (
+          <div style={{
+            width: '100%',
+            maxWidth: '1000px',
+            aspectRatio: '16/9',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            boxShadow: '0 20px 50px rgba(0, 240, 255, 0.08), 0 0 0 1px rgba(0, 240, 255, 0.15)',
+            backgroundColor: '#000',
+            position: 'relative'
+          }}>
+            {/* Video Oynatma Katmanı (İzleme Algılayıcı) */}
+            {currentWeekInfo.progress < 50 && (
+              <div 
+                onClick={startVideo}
+                style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: 'rgba(0,0,0,0.6)',
+                  zIndex: 10,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <div style={{ 
+                  background: 'var(--accent-cyan)', 
+                  borderRadius: '50%', 
+                  padding: '1.5rem', 
+                  marginBottom: '1rem',
+                  boxShadow: '0 0 30px rgba(0, 240, 255, 0.5)'
+                }}>
+                  <Play size={40} color="#000" style={{ marginLeft: '5px' }} />
+                </div>
+                <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>Videoyu Başlat</span>
+              </div>
+            )}
+            
+            <div 
+              style={{ width: '100%', height: '100%' }}
+              dangerouslySetInnerHTML={{ __html: activeVideo.embedCode }}
+            />
+          </div>
+        )}
       </main>
     </div>
   );
