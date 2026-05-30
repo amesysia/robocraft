@@ -96,7 +96,7 @@ const ProfileView = ({ playerData, setPlayerData, setActiveTab, exchangeResource
             availableAvatars={AVATARS}
             playerLevel={playerData.level}
           />
-          <button 
+          <button
             className="edit-skin-btn"
             onClick={() => setIsSkinEditorOpen(true)}
           >
@@ -210,7 +210,7 @@ const ProfileView = ({ playerData, setPlayerData, setActiveTab, exchangeResource
 
           {/* Golemlerim */}
           {activeSection === 'golems' && (
-            <GolemsView 
+            <GolemsView
               playerData={playerData}
               setPlayerData={setPlayerData}
               exchangeResource={exchangeResource}

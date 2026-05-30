@@ -34,19 +34,20 @@ const INITIAL_PLAYER_DATA = {
     m3: { x: 50, y: 80 }
   },
   tasks: [
-    { id: 'week1', title: '1. Hafta: Temel Elektrik & Devreler', xp: 150, done: false, unlocked: true, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week1', title: "1. Hafta: Arduino'ya Giriş", xp: 150, done: false, unlocked: true, targetTab: 'courses', progress: 0, requiredProgress: 100 },
     { id: 'week2', title: '2. Hafta: LED Yakıp Söndürme (Dijital Çıkış)', xp: 200, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
-    { id: 'week3', title: '3. Hafta: Sonsuz Döngüler (For & While)', xp: 150, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
-    { id: 'week4', title: '4. Hafta: Buton ile Kontrol (Dijital Giriş)', xp: 250, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
-    { id: 'week5', title: '5. Hafta: RGB LED ile Renk Şöleni', xp: 200, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week3', title: '3. Hafta: LDR ile Karanlıkta Yanan Lamba', xp: 150, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week4', title: '4. Hafta: Değişkenler', xp: 250, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week5', title: '5. Hafta: Akıllı Şehir Trafiği', xp: 200, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
     { id: 'week6', title: '6. Hafta: Potansiyometre (Analog Giriş)', xp: 300, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
-    { id: 'week7', title: '7. Hafta: LDR ile Karanlıkta Yanan Lamba', xp: 300, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week7', title: '7. Hafta: Sonsuz Döngüler: For Döngüsü', xp: 300, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
     { id: 'week8', title: '8. Hafta: Buzzer ile Müzik Çalmak', xp: 250, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
-    { id: 'week9', title: '9. Hafta: Ultrasonik Sensör ile Mesafe Ölçümü', xp: 350, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
-    { id: 'week10', title: '10. Hafta: Servo Motor Kontrolü', xp: 300, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
-    { id: 'week11', title: '11. Hafta: LCD Ekrana Yazı Yazdırmak', xp: 400, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
-    { id: 'week12', title: '12. Hafta: Bluetooth ile Uzaktan Kontrol', xp: 500, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
-    { id: 'week13', title: '13. Hafta: Büyük Final Projesi (Robot Yapımı)', xp: 1000, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week9', title: '9. Hafta: Servo Motor Kontrolü', xp: 350, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week10', title: '10. Hafta: Ultrasonik Sensör ile Mesafe Ölçümü', xp: 300, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week11', title: '11. Hafta: Park Sensörü', xp: 400, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week12', title: '12. Hafta: Akıllı Sokak Lambası', xp: 500, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week13', title: '13. Hafta: While Döngüsü ve Sensör', xp: 1000, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week14', title: '14. Hafta: Proje Sunumlarınız ve Büyük Kapanış', xp: 1000, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
   ]
 };
 
@@ -85,12 +86,17 @@ const App = () => {
               if (week1Index !== -1 && !cleanedTasks[week1Index].unlocked) {
                 cleanedTasks[week1Index].unlocked = true;
               }
+              // Her zaman güncel başlıkları INITIAL_PLAYER_DATA'dan al
+              cleanedTasks = cleanedTasks.map(task => {
+                const initTask = INITIAL_PLAYER_DATA.tasks.find(t => t.id === task.id);
+                return initTask ? { ...task, title: initTask.title } : task;
+              });
               const cleanedTaskIds = cleanedTasks.map(t => t.id);
               const hasMissing = INITIAL_PLAYER_DATA.tasks.some(t => !cleanedTaskIds.includes(t.id));
               if (hasMissing) {
                 cleanedTasks = INITIAL_PLAYER_DATA.tasks.map(initTask => {
                   const existing = cleanedTasks.find(t => t.id === initTask.id);
-                  return existing ? existing : initTask;
+                  return existing ? { ...existing, title: initTask.title } : initTask;
                 });
               }
               data.tasks = cleanedTasks;
@@ -135,7 +141,7 @@ const App = () => {
 
     if (!isFirebaseConfigured) {
       // Bulut bağlantısı yoksa sadece localStorage'a yedek alalım
-      saveUserData(currentUser, playerData).catch(() => {});
+      saveUserData(currentUser, playerData).catch(() => { });
       setSyncStatus('local');
       return;
     }
@@ -194,22 +200,22 @@ const App = () => {
 
       // Biten görev var mı kontrol et ve XP ekle, sonraki haftayı aç
       const completedTaskIndex = newTasks.findIndex(t => t.id === taskId && t.newlyDone);
-      
+
       let newXP = prev.xp;
       let newLevel = prev.level;
       let newEnergy = prev.energy || 0;
-      
+
       if (completedTaskIndex !== -1) {
         const completedTask = newTasks[completedTaskIndex];
         newXP += completedTask.xp;
         newLevel = Math.floor(newXP / 500);
-        newEnergy += 50; 
+        newEnergy += 50;
         completedTask.newlyDone = false;
-        
+
         // Enerji Toast animasyonu
         setEnergyToast('⚡ +50 Kazma Hakkı Kazanıldı!');
         setTimeout(() => setEnergyToast(null), 3000);
-        
+
         // Sonraki haftanın kilidini aç
         if (completedTaskIndex + 1 < newTasks.length) {
           newTasks[completedTaskIndex + 1].unlocked = true;
@@ -268,19 +274,19 @@ const App = () => {
     let success = false;
     setPlayerData(prev => {
       if (prev.inventory.includes(itemId)) return prev; // Zaten sahip
-      
+
       const res = prev.resources;
       // Yeterli maden var mı kontrol et
       for (const [resType, cost] of Object.entries(priceObj)) {
         if ((res[resType] || 0) < cost) return prev; // Yetersiz
       }
-      
+
       success = true;
       const newResources = { ...res };
       for (const [resType, cost] of Object.entries(priceObj)) {
         newResources[resType] -= cost;
       }
-      
+
       return {
         ...prev,
         resources: newResources,
@@ -296,13 +302,13 @@ const App = () => {
       // Eğer item zaten aynı slota takılıysa çıkar (Unequip mantığı)
       const currentGolemEquips = prev.golemEquipment[golemId] || {};
       const newGolemEquips = { ...currentGolemEquips };
-      
+
       if (newGolemEquips[item.slot] === item.id) {
         delete newGolemEquips[item.slot];
       } else {
         newGolemEquips[item.slot] = item.id;
       }
-      
+
       return {
         ...prev,
         golemEquipment: {
@@ -319,18 +325,18 @@ const App = () => {
       case 'icebreaker': return <IceBreakerView setActiveTab={setActiveTab} playerData={playerData} currentUser={currentUser} />;
       case 'live': return <LiveClassroomView />;
       case 'courses': return (
-        <div style={{position: 'relative', width: '100%', height: '100%'}}>
-          <CoursesView 
-            tasks={playerData.tasks} 
-            updateTaskProgress={updateTaskProgress} 
-            setActiveTab={setActiveTab} 
-            setActiveVideoWeek={setActiveVideoWeek} 
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+          <CoursesView
+            tasks={playerData.tasks}
+            updateTaskProgress={updateTaskProgress}
+            setActiveTab={setActiveTab}
+            setActiveVideoWeek={setActiveVideoWeek}
           />
           {energyToast && (
             <div className="energy-toast" style={{
-              position: 'absolute', bottom: '2rem', right: '2rem', 
-              backgroundColor: 'var(--accent-cyan)', color: '#000', 
-              padding: '1rem 1.5rem', borderRadius: '8px', 
+              position: 'absolute', bottom: '2rem', right: '2rem',
+              backgroundColor: 'var(--accent-cyan)', color: '#000',
+              padding: '1rem 1.5rem', borderRadius: '8px',
               fontWeight: 'bold', boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
               animation: 'slideUp 0.5s ease-out'
             }}>
@@ -340,7 +346,7 @@ const App = () => {
         </div>
       );
       case 'video-player': return (
-        <VideoPlayerView 
+        <VideoPlayerView
           tasks={playerData.tasks}
           activeVideoWeek={activeVideoWeek}
           setActiveVideoWeek={setActiveVideoWeek}
