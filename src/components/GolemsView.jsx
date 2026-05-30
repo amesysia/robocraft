@@ -40,7 +40,7 @@ const GOLEM_SHOP_ITEMS = [
 
 const GolemsView = ({ playerData, setPlayerData, handleGolemEquip, buyGolemItem }) => {
   const [modalGolemId, setModalGolemId] = useState(null);
-  const [activeMessage, setActiveMessage] = useState("");
+  const [activeMessage, setActiveMessage] = useState(null);
 
   const { resources, golemEquipment, inventory, golemVariations, unlockedGolems } = playerData;
   
@@ -61,8 +61,8 @@ const GolemsView = ({ playerData, setPlayerData, handleGolemEquip, buyGolemItem 
   const handleShowMessage = (e, gId) => {
     e.stopPropagation();
     const msgs = GOLEM_MESSAGES[gId];
-    setActiveMessage(msgs[Math.floor(Math.random() * msgs.length)]);
-    setTimeout(() => setActiveMessage(""), 3000);
+    setActiveMessage({ id: gId, text: msgs[Math.floor(Math.random() * msgs.length)] });
+    setTimeout(() => setActiveMessage(null), 3000);
   };
 
   const handleBuyItem = (item) => {
@@ -110,9 +110,9 @@ const GolemsView = ({ playerData, setPlayerData, handleGolemEquip, buyGolemItem 
                     avatar={golemAvatar}
                     equippedItems={golemEquips}
                   />
-                  {activeMessage && g.isUnlocked && (
+                  {activeMessage && activeMessage.id === gId && g.isUnlocked && (
                     <div className="golem-chat-bubble">
-                      {activeMessage}
+                      {activeMessage.text}
                     </div>
                   )}
                 </div>

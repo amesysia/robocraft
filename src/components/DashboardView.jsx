@@ -28,17 +28,16 @@ const DashboardView = ({ isDarkMode, toggleTheme, playerData, setActiveTab }) =>
           </div>
           <div 
             className="user-avatar-placeholder" 
-            style={{ padding: 0, overflow: 'hidden', cursor: 'pointer', border: '2px solid var(--accent-cyan)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ padding: 0, overflow: 'hidden', cursor: 'pointer', border: '2px solid var(--accent-cyan)', background: 'var(--bg-sidebar)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             onClick={() => setActiveTab('showcase')}
             title="Vitrinine Git!"
           >
-            <div style={{ transform: 'scale(0.35)', transformOrigin: 'center center' }}>
-              <AvatarDisplay
-                avatar={currentAvatar}
-                customSkin={playerData?.customSkin}
-                equippedItems={playerData?.equippedItems}
-              />
-            </div>
+            <AvatarDisplay
+              avatar={currentAvatar}
+              customSkin={playerData?.customSkin}
+              equippedItems={playerData?.equippedItems}
+              profileMode={true}
+            />
           </div>
         </div>
       </header>

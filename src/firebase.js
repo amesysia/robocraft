@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 import {
   getAuth,
@@ -138,4 +138,154 @@ export const saveUserData = async (userId, data) => {
   return false; // Yerel modda kaydedildi
 };
 
+/**
+ * Firestore'dan tüm öğrencileri (role !== 'teacher') çeker.
+ * @returns {Promise<Array>} Öğrenci verilerinin dizisi
+ */
+export const getAllStudents = async () => {
+  if (!isFirebaseConfigured) {
+    // Local modda tüm playerData_* öğelerini bul
+    const students = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith('playerData_')) {
+        try {
+          const data = JSON.parse(localStorage.getItem(key));
+          if (!data.role || data.role === 'student') {
+            students.push({ id: key.replace('playerData_', ''), ...data });
+          }
+        } catch (e) {
+          console.error("Local veri okunurken hata", e);
+        }
+      }
+    }
+    return students;
+  }
+
+  try {
+    const usersCol = collection(db, "users");
+    const snapshot = await getDocs(usersCol);
+    const students = [];
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if (!data.role || data.role === 'student') {
+        students.push({ id: docSnap.id, ...data });
+      }
+    });
+    return students;
+  } catch (error) {
+    console.error("❌ [Firebase] Öğrenciler çekilirken hata oluştu:", error);
+    return [];
+  }
+};
+
+/**
+ * Projeleri (Project Exhibition) getirir.
+ */
+export const getAllProjects = async () => {
+  const mockProjects = [
+    {
+      id: 'mock_proj_1',
+      studentId: 'student_123',
+      studentName: 'Ahmet Yılmaz',
+      avatarId: 'steve',
+      title: 'Akıllı Çöp Kutusu',
+      description: 'Ultrasonik sensör ve servo motor kullanarak kapağı otomatik açılan çöp kutusu projem.',
+      imageUrl: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+      score: null,
+      likes: 12,
+      comments: [
+        {
+          id: 'mock_comment_1',
+          studentId: 'teacher',
+          studentName: 'Öğretmen',
+          avatarId: 'villager',
+          text: 'Harika bir proje olmuş, tebrikler!',
+          createdAt: Date.now() - 40000000
+        }
+      ],
+      createdAt: Date.now() - 86400000
+    },
+    {
+      id: 'mock_proj_2',
+      studentId: 'student_456',
+      studentName: 'Ayşe Kaya',
+      avatarId: 'alex',
+      title: 'Işığa Duyarlı Lamba',
+      description: 'LDR sensörü sayesinde karanlıkta otomatik yanan led lamba.',
+      imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+      score: 95,
+      likes: 24,
+      comments: [],
+      createdAt: Date.now() - 172800000
+    }
+  ];
+
+  if (!isFirebaseConfigured) {
+    let result = [...mockProjects];
+    const local = localStorage.getItem('robo_projects');
+    if (local) {
+      try {
+        const parsed = JSON.parse(local);
+        if (parsed && parsed.length > 0) {
+          const mockIds = mockProjects.map(m => m.id);
+          const newProjects = parsed.filter(p => !mockIds.includes(p.id));
+          const updatedMocks = mockProjects.map(m => {
+            const found = parsed.find(p => p.id === m.id);
+            return found || m;
+          });
+          result = [...newProjects, ...updatedMocks];
+          result.sort((a,b) => b.createdAt - a.createdAt);
+        }
+      } catch (e) {
+        console.error("Local projeler okunamadı", e);
+      }
+    }
+    return result;
+  }
+
+  try {
+    const projCol = collection(db, "projects");
+    const snapshot = await getDocs(projCol);
+    const projs = [];
+    snapshot.forEach(docSnap => {
+      projs.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    
+    if (projs.length === 0) {
+      return mockProjects;
+    }
+    return projs;
+  } catch (error) {
+    console.error("Projeler çekilirken hata:", error);
+    return mockProjects;
+  }
+};
+
+/**
+ * Yeni veya güncellenmiş projeyi kaydeder.
+ */
+export const saveProject = async (project) => {
+  if (!isFirebaseConfigured) {
+    let projs = await getAllProjects(); // This already merges local and mocks perfectly
+    
+    const existingIndex = projs.findIndex(p => p.id === project.id);
+    if (existingIndex >= 0) {
+      projs[existingIndex] = project;
+    } else {
+      projs.unshift(project);
+    }
+    localStorage.setItem('robo_projects', JSON.stringify(projs));
+    return true;
+  }
+
+  try {
+    const docRef = doc(db, "projects", project.id);
+    await setDoc(docRef, project, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Proje kaydetme hatası:", error);
+    throw error;
+  }
+};
 
