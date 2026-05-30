@@ -44,9 +44,9 @@ const INITIAL_PLAYER_DATA = {
     { id: 'week3', title: '3. Hafta: LDR ile Karanlıkta Yanan Lamba', xp: 150, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
     { id: 'week4', title: '4. Hafta: Değişkenler', xp: 250, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
     { id: 'week5', title: '5. Hafta: Akıllı Şehir Trafiği', xp: 200, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
-    { id: 'week6', title: '6. Hafta: Potansiyometre (Analog Giriş)', xp: 300, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week6', title: '6. Hafta: If-Else Mantığı', xp: 300, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
     { id: 'week7', title: '7. Hafta: Sonsuz Döngüler: For Döngüsü', xp: 300, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
-    { id: 'week8', title: '8. Hafta: Buzzer ile Müzik Çalmak', xp: 250, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
+    { id: 'week8', title: '8. Hafta: Potansiyometre', xp: 250, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
     { id: 'week9', title: '9. Hafta: Servo Motor Kontrolü', xp: 350, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
     { id: 'week10', title: '10. Hafta: Ultrasonik Sensör ile Mesafe Ölçümü', xp: 300, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
     { id: 'week11', title: '11. Hafta: Park Sensörü', xp: 400, done: false, unlocked: false, targetTab: 'courses', progress: 0, requiredProgress: 100 },
@@ -111,6 +111,9 @@ const App = () => {
               data.displayName = firebaseUser.displayName;
             }
             setPlayerData(data);
+            // Aktif video haftasını kullanıcının kaldığı haftaya göre ayarla
+            const activeWeek = data.tasks?.find(t => t.targetTab === 'courses' && t.unlocked && !t.done);
+            if (activeWeek) setActiveVideoWeek(activeWeek.id);
             if (data.role === 'teacher') {
               setActiveTab('teacher-students');
             } else {
@@ -347,7 +350,7 @@ const App = () => {
 
     switch (activeTab) {
       case 'dashboard': return <DashboardView isDarkMode={isDarkMode} toggleTheme={toggleTheme} playerData={playerData} updateShowcasePosition={updateShowcasePosition} setActiveTab={setActiveTab} />;
-      case 'icebreaker': return <IceBreakerView setActiveTab={setActiveTab} playerData={playerData} currentUser={currentUser} />;
+      case 'icebreaker': return <IceBreakerView setActiveTab={setActiveTab} playerData={playerData} currentUser={currentUser} currentUserObj={currentUserObj} />;
       case 'live': return <LiveClassroomView />;
       case 'courses': return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -380,11 +383,11 @@ const App = () => {
         />
       );
       case 'adventure': return <AdventureMap tasks={playerData.tasks} playerData={playerData} collectResource={collectResource} useEnergy={useEnergy} unlockGolem={unlockGolem} />;
-      case 'community': return <CommunityView isDarkMode={isDarkMode} toggleTheme={toggleTheme} />;
+      case 'community': return <CommunityView isDarkMode={isDarkMode} toggleTheme={toggleTheme} playerData={playerData} currentUser={currentUser} currentUserObj={currentUserObj} />;
       case 'projects': return <ProjectsView playerData={playerData} />;
-      case 'profile': return <ProfileView playerData={playerData} setPlayerData={setPlayerData} setActiveTab={setActiveTab} buyGolemItem={buyGolemItem} handleGolemEquip={handleGolemEquip} />;
-      case 'showcase': return <ShowcaseView playerData={playerData} />;
-      default: return <DashboardView isDarkMode={isDarkMode} toggleTheme={toggleTheme} playerData={playerData} updateShowcasePosition={updateShowcasePosition} setActiveTab={setActiveTab} />;
+      case 'profile': return <ProfileView playerData={playerData} setPlayerData={setPlayerData} setActiveTab={setActiveTab} buyGolemItem={buyGolemItem} handleGolemEquip={handleGolemEquip} currentUserObj={currentUserObj} />;
+      case 'showcase': return <ShowcaseView playerData={playerData} currentUserObj={currentUserObj} />;
+      default: return <DashboardView isDarkMode={isDarkMode} toggleTheme={toggleTheme} playerData={playerData} updateShowcasePosition={updateShowcasePosition} setActiveTab={setActiveTab} currentUserObj={currentUserObj} />;
     }
   };
 

@@ -6,10 +6,11 @@ import SkinEditor from './SkinEditor';
 import GolemsView from './GolemsView';
 import { AVATARS } from '../data/avatarData';
 
-const ProfileView = ({ playerData, setPlayerData, setActiveTab, exchangeResource, handleGolemEquip, buyGolemItem }) => {
+const ProfileView = ({ playerData, setPlayerData, setActiveTab, exchangeResource, handleGolemEquip, buyGolemItem, currentUserObj }) => {
   const [activeSection, setActiveSection] = useState('shop'); // 'shop' | 'tasks' | 'golems'
   const [isSkinEditorOpen, setIsSkinEditorOpen] = useState(false);
 
+  const displayName = playerData?.displayName?.trim() || currentUserObj?.displayName?.trim() || 'Kahraman';
   const currentAvatar = AVATARS.find(a => a.id === playerData.avatarId) || AVATARS[0];
 
   const handleSaveSkin = (grid) => {
@@ -57,10 +58,10 @@ const ProfileView = ({ playerData, setPlayerData, setActiveTab, exchangeResource
         <div className="profile-header-left">
           <div className="profile-title-area">
             <h1 className="profile-title">
-              <span className="mc-title-icon">⚔️</span>
-              Profil & Envanter
+              <span className="mc-title-icon">👤</span>
+              {displayName}
             </h1>
-            <p className="profile-subtitle">Görevleri tamamla, XP kazan, eşyaları satın al ve avatarını özelleştir!</p>
+            <p className="profile-subtitle">Profil & Envanter • Görevleri tamamla, XP kazan, eşyaları satın al ve avatarını özelleştir!</p>
           </div>
         </div>
 

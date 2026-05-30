@@ -2,11 +2,19 @@ import React from 'react';
 import AvatarDisplay from './AvatarDisplay';
 import { AVATARS } from '../data/avatarData';
 
-const DashboardView = ({ isDarkMode, toggleTheme, playerData, setActiveTab }) => {
+const DashboardView = ({ isDarkMode, toggleTheme, playerData, setActiveTab, currentUserObj }) => {
   const currentAvatar = AVATARS.find(a => a.id === playerData?.avatarId) || AVATARS[0];
-  const firstName = playerData?.displayName
-    ? playerData.displayName.split(' ')[0]
-    : 'Kahraman';
+  const displayName = playerData?.displayName?.trim() || currentUserObj?.displayName?.trim() || 'Kahraman';
+  const firstName = displayName.split(' ')[0];
+
+  // Aktif kurs: kilit açık, henüz tamamlanmamış ilk hafta
+  const courseTasks = playerData?.tasks?.filter(t => t.targetTab === 'courses') || [];
+  const activeCourse = courseTasks.find(t => t.unlocked && !t.done) || courseTasks[courseTasks.length - 1];
+  const courseStage = activeCourse
+    ? activeCourse.progress >= 50
+      ? '📝 Teste devam et'
+      : '▶ Video izlemeye devam et'
+    : null;
   return (
     <>
       <header className="top-header">
@@ -17,14 +25,6 @@ const DashboardView = ({ isDarkMode, toggleTheme, playerData, setActiveTab }) =>
         <div className="header-actions">
           <div className="icon-btn theme-toggle" onClick={toggleTheme} title="Tema Değiştir">
             {isDarkMode ? '☀️' : '🌙'}
-          </div>
-          <div className="search-bar">
-            <span>🔍</span>
-            <input type="text" placeholder="Kurs veya konu ara..." />
-          </div>
-          <div className="icon-btn">
-            <span>🔔</span>
-            <div className="notification-dot"></div>
           </div>
           <div 
             className="user-avatar-placeholder" 
@@ -48,7 +48,7 @@ const DashboardView = ({ isDarkMode, toggleTheme, playerData, setActiveTab }) =>
             <div className="icebreaker-banner-info">
               <span className="badge badge-icebreaker">ÖZEL ETKİNLİK</span>
               <h2>Giriş: Buz Kırma Etkinliği</h2>
-              <p>Toplulukla tanışmak için kendi robotunun veya devrenin görselini yükle, diğer öğrencilerin paylaşımlarını keşfet! 📸🤖</p>
+              <p>Tasarladığın robotu sınıfla paylaş, diğer öğrencilerin robot tasarımlarını keşfet! 🤖✨</p>
               <button className="btn-primary" onClick={() => setActiveTab('icebreaker')}>
                 <span>🚀</span> Etkinliğe Katıl
               </button>
@@ -60,15 +60,20 @@ const DashboardView = ({ isDarkMode, toggleTheme, playerData, setActiveTab }) =>
           </div>
 
           <div className="card active-course-card">
-            <div className="course-info">
+            <div className="course-info" style={{ width: '100%' }}>
               <span className="badge">Aktif Kursun</span>
-              <h2>Arduino: LED Yakıp Söndürme</h2>
-              <p>🕑 Son çalışma: 2 saat önce • Adım 3'te kaldın.</p>
-              <button className="btn-primary">
-                <span>▶</span> Kaldığın Yerden Devam Et
+              <h2 style={{ marginTop: '0.5rem', marginBottom: '0.4rem' }}>
+                {activeCourse ? activeCourse.title : 'Henüz bir kurs yok'}
+              </h2>
+              {courseStage && (
+                <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  {courseStage}
+                </p>
+              )}
+              <button className="btn-primary" onClick={() => setActiveTab('courses')}>
+                <span>▶</span> Derse Git
               </button>
             </div>
-            <div className="image-placeholder">Breadboard Görsel Alanı</div>
           </div>
           <div className="stats-row">
             <div className="card stat-card">

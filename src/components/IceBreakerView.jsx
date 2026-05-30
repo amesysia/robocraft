@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Upload, Image, Heart, Camera } from 'lucide-react';
+import { ArrowLeft, Upload, Image, Heart, Camera, Trash2 } from 'lucide-react';
 import { db, isFirebaseConfigured } from '../firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { AVATARS } from '../data/avatarData';
 import '../icebreaker.css';
 
@@ -11,7 +11,7 @@ const MOCK_POSTS = [
     username: 'Demir_Kaan',
     avatarId: 'alex',
     imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=600&auto=format&fit=crop&q=60',
-    caption: 'Devre kartımı kurdum, ilk test başarılı! Ledler harika yanıp sönüyor. 🤖🔌',
+    caption: 'İlk robot tasarımımı tamamladım! Motorlar harika çalışıyor. 🤖⚡',
     likes: { student1: true, student2: true },
     createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
   },
@@ -20,7 +20,7 @@ const MOCK_POSTS = [
     username: 'Siber_Deniz',
     avatarId: 'steve',
     imageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=60',
-    caption: 'RGB LED ile renk şöleni yapıyoruz, kodu yükledim! 🌈⚡ #Robocraft',
+    caption: 'Robotumun gövdesini tasarladım, hem şık hem sağlam çıktı! 🦾✨ #Robocraft',
     likes: { student3: true },
     createdAt: new Date(Date.now() - 3600000 * 5).toISOString()
   },
@@ -29,13 +29,13 @@ const MOCK_POSTS = [
     username: 'Yazilimci_Arda',
     avatarId: 'creeper',
     imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&auto=format&fit=crop&q=60',
-    caption: 'İlk breadboard kurulumum, kablolar biraz karışık ama çalışıyor! 🛠️💡',
+    caption: 'İlk robot prototipi hazır! Biraz acemi göründü ama gurur duyuyorum 🛠️🤖',
     likes: { student1: true, student4: true, student5: true },
     createdAt: new Date(Date.now() - 3600000 * 24).toISOString()
   }
 ];
 
-const IceBreakerView = ({ setActiveTab, playerData, currentUser }) => {
+const IceBreakerView = ({ setActiveTab, playerData, currentUser, currentUserObj }) => {
   const [posts, setPosts] = useState([]);
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -43,6 +43,9 @@ const IceBreakerView = ({ setActiveTab, playerData, currentUser }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
+
+  // displayName: Firestore → Firebase Auth → 'RoboGezgin'
+  const displayName = playerData?.displayName?.trim() || currentUserObj?.displayName?.trim() || 'RoboGezgin';
 
   // Firestore veya LocalStorage'dan gönderileri yükleme
   useEffect(() => {
@@ -154,7 +157,7 @@ const IceBreakerView = ({ setActiveTab, playerData, currentUser }) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = (event) => {
-        const img = new Image();
+        const img = new window.Image();
         img.src = event.target.result;
         img.onload = () => {
           const canvas = document.createElement('canvas');
@@ -201,10 +204,11 @@ const IceBreakerView = ({ setActiveTab, playerData, currentUser }) => {
     try {
       const compressedBase64 = await compressImage(image);
       const newPost = {
-        username: currentUser || 'RoboGezgin',
+        username: displayName,
+        userId: currentUser || 'misafir',
         avatarId: playerData?.avatarId || 'steve',
         imageUrl: compressedBase64,
-        caption: caption.trim() || 'Harika bir devre kurdum! 🤖🔌',
+        caption: caption.trim() || 'İşte benim robot tasarımım! 🤖✨',
         likes: {},
         createdAt: isFirebaseConfigured ? serverTimestamp() : new Date().toISOString()
       };
@@ -271,6 +275,30 @@ const IceBreakerView = ({ setActiveTab, playerData, currentUser }) => {
     }
   };
 
+  const isMyPost = (post) => {
+    const userId = currentUser || 'misafir';
+    return (post.userId === userId) || (post.username === displayName) || (post.username === currentUser);
+  };
+
+  const handleDelete = async (postId) => {
+    if (window.confirm("Bu paylaşımınızı silmek istediğinize emin misiniz?")) {
+      try {
+        if (isFirebaseConfigured && !postId.startsWith('local_')) {
+          await deleteDoc(doc(db, 'icebreakers', postId));
+        } else {
+          const localData = localStorage.getItem('icebreaker_uploads');
+          const currentLocal = localData ? JSON.parse(localData) : [...MOCK_POSTS];
+          const updated = currentLocal.filter(p => p.id !== postId);
+          localStorage.setItem('icebreaker_uploads', JSON.stringify(updated));
+          setPosts(updated);
+        }
+      } catch (err) {
+        console.error("Paylaşım silinirken hata oluştu:", err);
+        alert("Silme işlemi başarısız oldu. Lütfen tekrar deneyin.");
+      }
+    }
+  };
+
   return (
     <div className="icebreaker-container">
       {/* Üst Kısım / Geri Dönme */}
@@ -280,7 +308,7 @@ const IceBreakerView = ({ setActiveTab, playerData, currentUser }) => {
         </button>
         <div className="icebreaker-title-group">
           <h1>Giriş: Buz Kırma Etkinliği 🧩</h1>
-          <p>Sınıf arkadaşlarınla tanışmak için yaptığın tasarımları, devreleri veya çalışma masanı paylaş!</p>
+          <p>Sınıf arkadaşlarınla tanışmak için tasarladığın robotu veya çalışmalarını paylaş!</p>
         </div>
       </header>
 
@@ -319,18 +347,18 @@ const IceBreakerView = ({ setActiveTab, playerData, currentUser }) => {
                   <div className="upload-placeholder">
                     <Upload size={36} className="text-cyan animate-pulse" />
                     <p className="upload-title">Görsel Seç veya Sürükle Bırak</p>
-                    <p className="upload-subtitle">Devrenin veya projenin fotoğrafı (PNG, JPG)</p>
+                    <p className="upload-subtitle">Robot tasarımının veya projenin fotoğrafı (PNG, JPG)</p>
                   </div>
                 )}
               </div>
 
               {/* Açıklama Kutusu */}
               <div className="input-group" style={{ marginTop: '1.5rem' }}>
-                <label>Projen/Çalışman Hakkında Açıklama</label>
+                <label>Robot Tasarımın Hakkında Açıklama</label>
                 <textarea
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Bu devrede ne yaptın? Hangi bileşenleri kullandın? Ya da sadece merhaba de! 👋"
+                  placeholder="Robotunu nasıl tasarladın? Ne tür malzemeler kullandın? Ya da sadece merhaba de! 👋"
                   maxLength={150}
                   rows={3}
                 />
@@ -377,13 +405,40 @@ const IceBreakerView = ({ setActiveTab, playerData, currentUser }) => {
                   <div className="gallery-card" key={post.id}>
                     {/* Gönderi Sahibi */}
                     <div className="gallery-card-header">
-                      <div className="user-avatar-emoji">
-                        {getAvatarEmoji(post.avatarId)}
-                      </div>
                       <div className="user-info">
                         <span className="username">{post.username}</span>
                         <span className="timestamp">{formatTimeAgo(post.createdAt)}</span>
                       </div>
+                      {isMyPost(post) && (
+                        <button
+                          className="btn-delete"
+                          onClick={() => handleDelete(post.id)}
+                          title="Paylaşımı Sil"
+                          style={{
+                            marginLeft: 'auto',
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--text-secondary)',
+                            cursor: 'pointer',
+                            padding: '0.4rem',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = 'var(--accent-red)';
+                            e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.08)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = 'var(--text-secondary)';
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
 
                     {/* Paylaşılan Görsel */}

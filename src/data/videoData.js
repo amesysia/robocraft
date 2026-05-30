@@ -20,7 +20,7 @@ export const WEEK_VIDEOS = {
     embedCode: '<iframe width="100%" height="100%" src="https://www.youtube.com/embed/GSvMF6YnEvQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="border-radius: 12px; border: 1px solid var(--border-color);"></iframe>'
   },
   week6: {
-    title: '6. Hafta: Potansiyometre (Analog Giriş)',
+    title: '6. Hafta: If-Else Mantığı',
     embedCode: '<iframe width="100%" height="100%" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="border-radius: 12px; border: 1px solid var(--border-color);"></iframe>'
   },
   week7: {
@@ -28,7 +28,7 @@ export const WEEK_VIDEOS = {
     embedCode: '<iframe width="100%" height="100%" src="https://www.youtube.com/embed/aAU0__quUlk" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="border-radius: 12px; border: 1px solid var(--border-color);"></iframe>'
   },
   week8: {
-    title: '8. Hafta: Buzzer ile Müzik Çalmak',
+    title: '8. Hafta: Potansiyometre',
     embedCode: '<iframe width="100%" height="100%" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="border-radius: 12px; border: 1px solid var(--border-color);"></iframe>'
   },
   week9: {

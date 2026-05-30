@@ -22,8 +22,9 @@ const GOLEM_VARIATIONS = {
   ]
 };
 
-const ShowcaseView = ({ playerData }) => {
+const ShowcaseView = ({ playerData, currentUserObj }) => {
   const currentAvatar = AVATARS.find(a => a.id === playerData.avatarId) || AVATARS[0];
+  const displayName = playerData?.displayName?.trim() || currentUserObj?.displayName?.trim() || 'Kahraman';
   const { golemVariations, unlockedGolems, golemEquipment } = playerData;
   
   const hasResource = (res) => (unlockedGolems || []).includes(res);
@@ -40,10 +41,10 @@ const ShowcaseView = ({ playerData }) => {
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
         <h1 style={{ display: 'flex', alignItems: 'center', gap: '1rem', justifyContent: 'center', fontSize: '2.5rem', color: 'var(--text-primary)' }}>
           <Trophy size={40} className="text-cyan" /> 
-          Profil ve Vitrin
+          {displayName}
           <Star size={40} className="text-cyan" />
         </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', marginTop: '1rem' }}>Karakterini ve Golemlerini Sergile!</p>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', marginTop: '1rem' }}>Profil ve Vitrin • Karakterini ve Golemlerini Sergile!</p>
       </div>
 
       <div style={{
@@ -73,7 +74,8 @@ const ShowcaseView = ({ playerData }) => {
           overflow: 'hidden'
         }}>
           <div style={{ position: 'absolute', top: '-50px', left: '20%', width: '300px', height: '300px', background: 'var(--accent-cyan)', opacity: 0.1, filter: 'blur(100px)', borderRadius: '50%' }}></div>
-          <h2 style={{ marginBottom: '1rem', fontSize: '1.8rem', color: 'var(--accent-cyan)', zIndex: 10 }}>Karakterim</h2>
+          <h2 style={{ marginBottom: '0.2rem', fontSize: '1.8rem', color: 'var(--accent-cyan)', zIndex: 10 }}>Karakterim</h2>
+          <div style={{ color: 'var(--text-secondary)', fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '1rem', zIndex: 10 }}>{displayName}</div>
           
           {/* Avatar'ın taşmaması için yeterli margin bırakıyoruz (scale 1.5 olduğu için ekstra alan gerekiyor) */}
           <div style={{ transform: 'scale(1.5)', transformOrigin: 'top center', marginTop: '1rem', marginBottom: '6rem', zIndex: 10 }}>
